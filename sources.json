@@ -1,0 +1,155 @@
+{
+  "rss_sources": [
+    {
+      "name": "OpenAI News",
+      "url": "https://openai.com/news/rss.xml",
+      "category": "general_ai",
+      "trust_score": 9
+    },
+    {
+      "name": "Anthropic News",
+      "url": "https://www.anthropic.com/news/rss.xml",
+      "category": "general_ai",
+      "trust_score": 9
+    },
+    {
+      "name": "Google DeepMind Blog",
+      "url": "https://deepmind.google/discover/blog/rss.xml",
+      "category": "general_ai",
+      "trust_score": 9
+    },
+    {
+      "name": "NVIDIA Blog",
+      "url": "https://blogs.nvidia.com/feed/",
+      "category": "edge_ai",
+      "trust_score": 8
+    },
+    {
+      "name": "Hugging Face Blog",
+      "url": "https://huggingface.co/blog/feed.xml",
+      "category": "general_ai",
+      "trust_score": 8
+    },
+    {
+      "name": "MIT Technology Review - AI",
+      "url": "https://www.technologyreview.com/topic/artificial-intelligence/feed",
+      "category": "general_ai",
+      "trust_score": 8
+    },
+    {
+      "name": "IEEE Spectrum Robotics",
+      "url": "https://spectrum.ieee.org/feeds/topic/robotics.rss",
+      "category": "robotics",
+      "trust_score": 8
+    },
+    {
+      "name": "The Robot Report",
+      "url": "https://www.therobotreport.com/feed/",
+      "category": "robotics",
+      "trust_score": 7
+    },
+    {
+      "name": "Robotics & Automation News",
+      "url": "https://roboticsandautomationnews.com/feed/",
+      "category": "robotics",
+      "trust_score": 6
+    },
+    {
+      "name": "TechCrunch AI",
+      "url": "https://techcrunch.com/category/artificial-intelligence/feed/",
+      "category": "general_ai",
+      "trust_score": 6
+    },
+    {
+      "name": "VentureBeat AI",
+      "url": "https://venturebeat.com/category/ai/feed/",
+      "category": "general_ai",
+      "trust_score": 6
+    }
+  ],
+  "google_news_queries": [
+    {
+      "query": "military AI OR defense AI OR autonomous systems",
+      "category": "defense_ai",
+      "language": "en",
+      "region": "US",
+      "trust_score": 6
+    },
+    {
+      "query": "counter-UAS OR drone defense OR anti-drone system AI",
+      "category": "counter_uas",
+      "language": "en",
+      "region": "US",
+      "trust_score": 6
+    },
+    {
+      "query": "UAV computer vision OR drone autonomy OR autonomous drone AI",
+      "category": "uav_ai",
+      "language": "en",
+      "region": "US",
+      "trust_score": 6
+    },
+    {
+      "query": "humanoid robot OR embodied AI OR robotics foundation model",
+      "category": "robotics",
+      "language": "en",
+      "region": "US",
+      "trust_score": 6
+    },
+    {
+      "query": "edge AI NVIDIA Jetson OR real-time computer vision OR YOLO object tracking",
+      "category": "edge_ai",
+      "language": "en",
+      "region": "US",
+      "trust_score": 6
+    },
+    {
+      "query": "DARPA autonomous systems robotics AI",
+      "category": "defense_ai",
+      "language": "en",
+      "region": "US",
+      "trust_score": 7
+    },
+    {
+      "query": "Baykar yapay zeka İHA OR ASELSAN yapay zeka OR TUSAŞ otonom sistemler",
+      "category": "turkey_defense",
+      "language": "tr",
+      "region": "TR",
+      "trust_score": 7
+    },
+    {
+      "query": "savunma sanayi yapay zeka OR sürü İHA OR otonom sistemler",
+      "category": "turkey_defense",
+      "language": "tr",
+      "region": "TR",
+      "trust_score": 7
+    }
+  ],
+  "arxiv_queries": [
+    {
+      "query": "all:\"swarm robotics\" OR all:\"multi-agent UAV\" OR all:\"drone swarm\"",
+      "category": "research_swarm",
+      "trust_score": 8
+    },
+    {
+      "query": "all:\"UAV detection\" OR all:\"drone detection\" OR all:\"counter UAV\"",
+      "category": "research_uav",
+      "trust_score": 8
+    },
+    {
+      "query": "all:\"visual servoing\" OR all:\"object tracking\" OR all:\"real-time detection\"",
+      "category": "research_cv",
+      "trust_score": 8
+    },
+    {
+      "query": "all:\"embodied AI\" OR all:\"humanoid robot\" OR all:\"robot foundation model\"",
+      "category": "research_robotics",
+      "trust_score": 8
+    },
+    {
+      "query": "all:\"edge AI\" OR all:\"on-device inference\" OR all:\"real-time neural network\"",
+      "category": "research_edge_ai",
+      "trust_score": 8
+    }
+  ]
+}
