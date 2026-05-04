@@ -22,25 +22,35 @@ try:
 except Exception:
     pass
 
-
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 SOURCES_FILE = os.path.join(ROOT_DIR, "sources.json")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash"
-# 503 / high-demand durumları için model yedekleri. Örnek: gemini-2.5-flash-lite,gemini-2.0-flash
-GEMINI_FALLBACK_MODELS = [m.strip() for m in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-2.5-flash-lite,gemini-2.0-flash").split(",") if m.strip()]
+WEEKLY_GEMINI_MODEL = os.getenv("WEEKLY_GEMINI_MODEL", "gemini-2.5-pro").strip() or "gemini-2.5-pro"
+GEMINI_FALLBACK_MODELS = [
+    m.strip() for m in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-2.5-flash-lite,gemini-2.0-flash").split(",") if m.strip()
+]
 GEMINI_MAX_RETRIES = int(os.getenv("GEMINI_MAX_RETRIES", "3"))
+
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "").strip()
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "").strip()  # Opsiyonel; rate-limit için önerilir
-HF_TOKEN = os.getenv("HF_TOKEN", "").strip()  # Opsiyonel; HuggingFace API bazı endpointlerde token isteyebilir
+TELEGRAM_DISABLE_PREVIEW = os.getenv("TELEGRAM_DISABLE_PREVIEW", "true").lower() == "true"
+
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "").strip()
+HF_TOKEN = os.getenv("HF_TOKEN", "").strip()
+SEMANTIC_SCHOLAR_API_KEY = os.getenv("SEMANTIC_SCHOLAR_API_KEY", "").strip()
 
 BULLETIN_MODE = os.getenv("BULLETIN_MODE", "daily").strip().lower()
 MAX_AGE_HOURS = int(os.getenv("MAX_AGE_HOURS", "48"))
 MAX_CANDIDATES = int(os.getenv("MAX_CANDIDATES", "35"))
 BULLETIN_ITEMS = int(os.getenv("BULLETIN_ITEMS", "7"))
 REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "20"))
+ARXIV_MAX_QUERIES = int(os.getenv("ARXIV_MAX_QUERIES", "4"))
+SEMANTIC_SCHOLAR_MAX_QUERIES = int(os.getenv("SEMANTIC_SCHOLAR_MAX_QUERIES", "2"))
+ENABLE_HF_TRENDING = os.getenv("ENABLE_HF_TRENDING", "false").lower() == "true"
+ENABLE_GITHUB_TRENDING = os.getenv("ENABLE_GITHUB_TRENDING", "true").lower() == "true"
+ENABLE_SEMANTIC_SCHOLAR = os.getenv("ENABLE_SEMANTIC_SCHOLAR", "false").lower() == "true"
 
 CATEGORY_LABELS = {
     "general_ai": "Genel AI",
@@ -55,12 +65,12 @@ CATEGORY_LABELS = {
     "research_cv": "Akademik: Computer Vision",
     "research_robotics": "Akademik: Robotik",
     "research_edge_ai": "Akademik: Edge AI",
-    "hf_model": "🤗 HuggingFace: Yeni Model",
-    "hf_paper": "🤗 HuggingFace: Günün Makalesi",
-    "github_trending": "🐙 GitHub: Trend Repo",
-    "github_release": "🚀 GitHub: Kritik Release",
-    "papers_with_code": "📊 Papers With Code: SOTA",
-    "semantic_scholar": "🎓 Semantic Scholar: Etkili Makale",
+    "hf_model": "HuggingFace: Yeni Model",
+    "hf_paper": "HuggingFace: Günün Makalesi",
+    "github_trending": "GitHub: Trend Repo",
+    "github_release": "GitHub: Kritik Release",
+    "papers_with_code": "Papers With Code: SOTA",
+    "semantic_scholar": "Semantic Scholar: Etkili Makale",
 }
 
 CATEGORY_BASE_SCORE = {
@@ -85,7 +95,6 @@ CATEGORY_BASE_SCORE = {
 }
 
 KEYWORD_WEIGHTS = {
-    # Savunma / otonom sistemler
     "military ai": 18, "defense ai": 18, "defence ai": 18,
     "autonomous systems": 16, "autonomous system": 14,
     "darpa": 16, "nato": 11,
@@ -93,37 +102,29 @@ KEYWORD_WEIGHTS = {
     "anti-drone": 18, "drone defense": 18, "drone defence": 18,
     "electronic warfare": 15, "sensor fusion": 13,
     "target tracking": 13, "surveillance": 9,
-    # UAV / İHA
     "uav": 18, "uas": 14, "drone": 13, "drones": 13,
     "sürü iha": 22, "iha": 18, "siha": 18,
-    "baykar": 18, "aselasan": 18, "aselsan": 18,
-    "tusaş": 17, "tusas": 17, "stm": 12, "havelsan": 15,
-    "roketsan": 13, "savunma sanayi": 18, "otonom sistem": 16,
-    # Robotik
+    "baykar": 18, "aselsan": 18, "tusaş": 17, "tusas": 17,
+    "stm": 12, "havelsan": 15, "roketsan": 13,
+    "savunma sanayi": 18, "otonom sistem": 16,
     "robotics": 15, "robotic": 12, "humanoid": 18,
     "embodied ai": 17, "robot foundation model": 17,
     "legged robot": 14, "quadruped": 13, "manipulation": 11,
-    # Computer vision / edge AI
     "computer vision": 15, "object detection": 14,
     "object tracking": 14, "visual tracking": 13,
     "real-time detection": 14, "yolo": 16,
     "jetson": 15, "edge ai": 16, "on-device": 13,
     "inference": 8, "hailo": 14, "multimodal": 10,
-    "onnx": 10, "tensorrt": 12, "tflite": 10, "openvino": 10,
-    # AI research / agents
+    "onnx": 10, "tensorrt": 12, "openvino": 10,
     "ai agent": 12, "ai agents": 12,
     "multi-agent": 15, "swarm": 18,
     "reinforcement learning": 11, "foundation model": 10,
     "vision-language": 11, "vla": 10,
     "diffusion": 9, "transformer": 8,
-    # HuggingFace / model sinyal kelimeleri
     "fine-tuned": 10, "quantized": 12, "gguf": 11,
     "lora": 10, "peft": 9, "benchmark": 8,
     "open source": 7, "open-source": 7,
-    # GitHub sinyal kelimeleri
-    "release": 8, "v2": 6, "v3": 6,
-    "real-time": 12, "deployment": 9,
-    # Akademik sinyal
+    "release": 8, "real-time": 12, "deployment": 9,
     "arxiv": 9, "paper": 7, "dataset": 8,
     "state-of-the-art": 14, "sota": 14,
 }
@@ -133,13 +134,11 @@ NOISE_PATTERNS = [
     r"\bhoroscope\b", r"\bgambling\b",
 ]
 
-# GitHub Releases: takip edilecek kritik repolar
 GITHUB_WATCH_REPOS = [
     {"owner": "ultralytics", "repo": "ultralytics", "category": "edge_ai", "trust_score": 9},
     {"owner": "ultralytics", "repo": "yolov5", "category": "edge_ai", "trust_score": 8},
     {"owner": "hailo-ai", "repo": "hailo-rpi5-examples", "category": "edge_ai", "trust_score": 8},
     {"owner": "NVIDIA", "repo": "TensorRT-LLM", "category": "edge_ai", "trust_score": 9},
-    {"owner": "NVIDIA-AI-IOT", "repo": "deepstream_python_apps", "category": "edge_ai", "trust_score": 7},
     {"owner": "roboflow", "repo": "supervision", "category": "research_cv", "trust_score": 8},
     {"owner": "PaddlePaddle", "repo": "PaddleDetection", "category": "research_cv", "trust_score": 7},
     {"owner": "openai", "repo": "openai-python", "category": "general_ai", "trust_score": 8},
@@ -152,7 +151,6 @@ GITHUB_WATCH_REPOS = [
     {"owner": "voxel51", "repo": "fiftyone", "category": "research_cv", "trust_score": 7},
 ]
 
-# HuggingFace: model tag filtreleri (trending modellerde bu taglardan biri varsa dahil et)
 HF_RELEVANT_TAGS = {
     "object-detection", "image-classification", "image-segmentation",
     "video-classification", "depth-estimation", "keypoint-detection",
@@ -160,16 +158,6 @@ HF_RELEVANT_TAGS = {
     "visual-question-answering", "zero-shot-object-detection",
     "autonomous-driving",
 }
-
-# Papers With Code: takip edilecek task'lar
-ENABLE_PWC = os.getenv("ENABLE_PWC", "false").strip().lower() in {"1", "true", "yes", "on"}
-
-PWC_TASKS = [
-    "object-detection",
-    "multi-object-tracking",
-    "small-object-detection",
-]
-
 
 @dataclass
 class Article:
@@ -186,25 +174,19 @@ class Article:
     extra: Dict[str, Any] = field(default_factory=dict)
 
     def to_prompt_dict(self) -> Dict[str, Any]:
-        d = {
+        return {
             "title": self.title,
             "source": self.source,
             "category": CATEGORY_LABELS.get(self.category, self.category),
             "published_at": self.published_at,
             "score": round(self.score, 2),
-            "matched_keywords": self.matched_keywords or [],
-            "summary": shorten(clean_text(self.summary), 700),
+            "matched_keywords": self.matched_keywords[:8],
+            "summary": shorten(clean_text(self.summary), 520),
             "link": self.link,
             "kind": self.kind,
+            "extra": self.extra,
         }
-        if self.extra:
-            d["extra"] = self.extra
-        return d
 
-
-# ---------------------------------------------------------------------------
-# Utilities
-# ---------------------------------------------------------------------------
 
 def clean_text(text: Any) -> str:
     if text is None:
@@ -214,20 +196,6 @@ def clean_text(text: Any) -> str:
     text = html.unescape(text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
-
-
-def clean_text_preserve_lines(text: Any) -> str:
-    """Gemini/Telegram çıktısında satır sonlarını koruyarak hafif temizlik yapar."""
-    if text is None:
-        return ""
-    text = str(text).replace("\r\n", "\n").replace("\r", "\n")
-    text = re.sub(r"<[^>]+>", " ", text)
-    text = html.unescape(text)
-    # Her satırın içindeki fazla boşlukları düzelt, ama paragraf yapısını bozma.
-    lines = [re.sub(r"[ \t]+", " ", line).strip() for line in text.split("\n")]
-    cleaned = "\n".join(lines)
-    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
-    return cleaned
 
 
 def shorten(text: str, limit: int) -> str:
@@ -250,9 +218,7 @@ def parse_datetime(value: Any) -> Optional[datetime]:
 
 
 def iso_or_empty(dt: Optional[datetime]) -> str:
-    if not dt:
-        return ""
-    return dt.astimezone(timezone.utc).isoformat()
+    return dt.astimezone(timezone.utc).isoformat() if dt else ""
 
 
 def is_recent(dt: Optional[datetime], max_age_hours: int) -> bool:
@@ -266,8 +232,11 @@ def load_sources() -> Dict[str, Any]:
         return json.load(f)
 
 
-def fetch_url(url: str, headers: Optional[Dict] = None) -> bytes:
-    _headers = {"User-Agent": "AI-Intel-Telegram-Bot/2.0 (+https://github.com/)"}
+def fetch_url(url: str, headers: Optional[Dict[str, str]] = None) -> bytes:
+    _headers = {
+        "User-Agent": "Mozilla/5.0 AI-Intel-Telegram-Bot/3.0",
+        "Accept": "application/rss+xml, application/atom+xml, application/json, text/html, */*",
+    }
     if headers:
         _headers.update(headers)
     response = requests.get(url, headers=_headers, timeout=REQUEST_TIMEOUT)
@@ -275,29 +244,22 @@ def fetch_url(url: str, headers: Optional[Dict] = None) -> bytes:
     return response.content
 
 
-def fetch_json(url: str, headers: Optional[Dict] = None) -> Any:
-    _headers = {"User-Agent": "AI-Intel-Telegram-Bot/2.0 (+https://github.com/)"}
+def fetch_json(url: str, headers: Optional[Dict[str, str]] = None) -> Any:
+    _headers = {"User-Agent": "Mozilla/5.0 AI-Intel-Telegram-Bot/3.0", "Accept": "application/json"}
     if headers:
         _headers.update(headers)
     response = requests.get(url, headers=_headers, timeout=REQUEST_TIMEOUT)
     response.raise_for_status()
-    content_type = response.headers.get("content-type", "")
-    try:
-        return response.json()
-    except ValueError as exc:
-        preview = response.text[:160].replace("\n", " ")
-        raise ValueError(f"JSON parse failed. content-type={content_type}, preview={preview}") from exc
+    return response.json()
 
 
 def fetch_feed(url: str) -> feedparser.FeedParserDict:
-    content = fetch_url(url)
-    return feedparser.parse(content)
+    return feedparser.parse(fetch_url(url))
 
 
 def entry_datetime(entry: feedparser.FeedParserDict) -> Optional[datetime]:
     for key in ["published", "updated", "created", "pubDate", "date"]:
-        value = entry.get(key)
-        dt = parse_datetime(value)
+        dt = parse_datetime(entry.get(key))
         if dt:
             return dt
     return None
@@ -310,16 +272,19 @@ def github_headers() -> Dict[str, str]:
     return h
 
 
-# ---------------------------------------------------------------------------
-# Source fetchers — original
-# ---------------------------------------------------------------------------
+def hf_headers() -> Dict[str, str]:
+    h = {"Accept": "application/json"}
+    if HF_TOKEN:
+        h["Authorization"] = f"Bearer {HF_TOKEN}"
+    return h
+
 
 def fetch_rss_sources(sources: List[Dict[str, Any]]) -> List[Article]:
     articles: List[Article] = []
     for src in sources:
         try:
             parsed = fetch_feed(src["url"])
-            for entry in parsed.entries[:25]:
+            for entry in parsed.entries[:20]:
                 dt = entry_datetime(entry)
                 if not is_recent(dt, MAX_AGE_HOURS):
                     continue
@@ -331,20 +296,13 @@ def fetch_rss_sources(sources: List[Dict[str, Any]]) -> List[Article]:
                         content_value = entry.get("content", [{}])[0].get("value", "")
                     except Exception:
                         content_value = ""
-                summary = clean_text(
-                    entry.get("summary", "")
-                    or entry.get("description", "")
-                    or content_value
-                )
-                if not title or not link:
-                    continue
-                articles.append(Article(
-                    title=title, link=link, summary=summary,
-                    source=src.get("name", "RSS"),
-                    category=src.get("category", "general_ai"),
-                    published_at=iso_or_empty(dt), kind="rss",
-                    trust_score=int(src.get("trust_score", 5)),
-                ))
+                summary = clean_text(entry.get("summary", "") or entry.get("description", "") or content_value)
+                if title and link:
+                    articles.append(Article(
+                        title=title, link=link, summary=summary,
+                        source=src.get("name", "RSS"), category=src.get("category", "general_ai"),
+                        published_at=iso_or_empty(dt), kind="rss", trust_score=int(src.get("trust_score", 5)),
+                    ))
         except Exception as exc:
             print(f"[WARN] RSS fetch failed: {src.get('name')} - {exc}", file=sys.stderr)
     return articles
@@ -361,34 +319,25 @@ def google_news_url(query: str, language: str, region: str, max_age_hours: int) 
 
 def fetch_google_news(queries: List[Dict[str, Any]]) -> List[Article]:
     articles: List[Article] = []
-    max_queries = int(os.getenv("GOOGLE_NEWS_MAX_QUERIES", str(len(queries))))
-    delay = float(os.getenv("GOOGLE_NEWS_DELAY_SECONDS", "0.4"))
-
-    for item in queries[:max_queries]:
+    for item in queries:
         try:
-            time.sleep(delay)
-            url = google_news_url(
-                item["query"], item.get("language", "en"),
-                item.get("region", "US"), MAX_AGE_HOURS,
-            )
-            parsed = fetch_feed(url)
-            for entry in parsed.entries[:15]:
+            parsed = fetch_feed(google_news_url(item["query"], item.get("language", "en"), item.get("region", "US"), MAX_AGE_HOURS))
+            for entry in parsed.entries[:12]:
                 dt = entry_datetime(entry)
                 if not is_recent(dt, MAX_AGE_HOURS):
                     continue
                 title = clean_text(entry.get("title", ""))
                 link = clean_text(entry.get("link", ""))
                 summary = clean_text(entry.get("summary", "") or entry.get("description", ""))
-                source = clean_text(entry.get("source", {}).get("title", "Google News")) if isinstance(entry.get("source"), dict) else "Google News"
-                if not title or not link:
-                    continue
-                articles.append(Article(
-                    title=title, link=link, summary=summary,
-                    source=source or "Google News",
-                    category=item.get("category", "general_ai"),
-                    published_at=iso_or_empty(dt), kind="google_news",
-                    trust_score=int(item.get("trust_score", 5)),
-                ))
+                source = "Google News"
+                if isinstance(entry.get("source"), dict):
+                    source = clean_text(entry.get("source", {}).get("title", "")) or source
+                if title and link:
+                    articles.append(Article(
+                        title=title, link=link, summary=summary, source=source,
+                        category=item.get("category", "general_ai"), published_at=iso_or_empty(dt),
+                        kind="google_news", trust_score=int(item.get("trust_score", 5)),
+                    ))
         except Exception as exc:
             print(f"[WARN] Google News fetch failed: {item.get('query')} - {exc}", file=sys.stderr)
     return articles
@@ -396,480 +345,213 @@ def fetch_google_news(queries: List[Dict[str, Any]]) -> List[Article]:
 
 def fetch_arxiv(queries: List[Dict[str, Any]]) -> List[Article]:
     articles: List[Article] = []
-    # arXiv API 429 vermemesi için her run'da query sayısını sınırlıyoruz.
-    max_queries = int(os.getenv("ARXIV_MAX_QUERIES", "4"))
-    delay = float(os.getenv("ARXIV_DELAY_SECONDS", "3.5"))
-
-    for item in queries[:max_queries]:
-        search_query_raw = item["query"]
+    for item in queries[:ARXIV_MAX_QUERIES]:
         for attempt in range(2):
             try:
-                time.sleep(delay)
-                search_query = urllib.parse.quote(search_query_raw)
+                search_query = urllib.parse.quote(item["query"])
                 url = (
                     "https://export.arxiv.org/api/query?"
-                    f"search_query={search_query}&start=0&max_results=5"
+                    f"search_query={search_query}&start=0&max_results=6"
                     "&sortBy=submittedDate&sortOrder=descending"
                 )
                 parsed = fetch_feed(url)
-                for entry in parsed.entries[:5]:
+                for entry in parsed.entries[:6]:
                     dt = entry_datetime(entry)
                     if not is_recent(dt, MAX_AGE_HOURS * 3):
                         continue
                     title = clean_text(entry.get("title", ""))
                     link = clean_text(entry.get("link", ""))
                     summary = clean_text(entry.get("summary", ""))
-                    if not title or not link:
-                        continue
-                    articles.append(Article(
-                        title=title, link=link, summary=summary,
-                        source="arXiv", category=item.get("category", "research"),
-                        published_at=iso_or_empty(dt), kind="arxiv",
-                        trust_score=int(item.get("trust_score", 8)),
-                    ))
+                    if title and link:
+                        articles.append(Article(
+                            title=title, link=link, summary=summary, source="arXiv",
+                            category=item.get("category", "research"), published_at=iso_or_empty(dt),
+                            kind="arxiv", trust_score=int(item.get("trust_score", 8)),
+                        ))
                 break
             except Exception as exc:
-                msg = str(exc)
-                if "429" in msg and attempt == 0:
-                    print(f"[WARN] arXiv rate-limited, retrying slowly: {search_query_raw}", file=sys.stderr)
-                    time.sleep(delay * 3)
-                    continue
-                print(f"[WARN] arXiv fetch failed: {search_query_raw} - {exc}", file=sys.stderr)
-                break
-    return articles
-
-# ---------------------------------------------------------------------------
-# NEW: HuggingFace
-# ---------------------------------------------------------------------------
-
-def fetch_hf_trending_models() -> List[Article]:
-    """
-    HuggingFace trending modelleri çeker. API key gerekmez.
-    Sorgulanan endpoint: huggingface.co/api/trending-repos
-    """
-    articles: List[Article] = []
-    try:
-        headers = {"Authorization": f"Bearer {HF_TOKEN}"} if HF_TOKEN else None
-        data = fetch_json(
-            "https://huggingface.co/api/trending-repos?limit=30&type=model",
-            headers=headers,
-        )
-        repos = data if isinstance(data, list) else data.get("recentlyTrending", [])
-        now = datetime.now(timezone.utc)
-
-        for repo in repos[:30]:
-            repo_id = repo.get("id") or repo.get("repoData", {}).get("id") or ""
-            if not repo_id:
-                # Try nested structure
-                repo_id = (repo.get("repoData") or {}).get("id", "")
-            if not repo_id:
-                continue
-
-            tags = []
-            repo_data = repo.get("repoData") or repo
-            pipeline_tag = repo_data.get("pipeline_tag", "") or ""
-            tags = list(repo_data.get("tags") or [])
-            if pipeline_tag:
-                tags.append(pipeline_tag)
-
-            # Sadece ilgili tagları olan modelleri al
-            relevant = HF_RELEVANT_TAGS.intersection(set(t.lower() for t in tags))
-
-            downloads = repo_data.get("downloads", 0) or 0
-            likes = repo_data.get("likes", 0) or 0
-
-            # Filtreleme: ya ilgili tag var, ya da yeterince popüler ve ML modeli
-            if not relevant and downloads < 5000:
-                continue
-
-            title = f"🤗 HF Model Trend: {repo_id}"
-            link = f"https://huggingface.co/{repo_id}"
-            card_data = repo_data.get("cardData") or {}
-            summary_parts = []
-            if pipeline_tag:
-                summary_parts.append(f"Task: {pipeline_tag}")
-            if tags:
-                summary_parts.append(f"Tags: {', '.join(tags[:6])}")
-            if downloads:
-                summary_parts.append(f"Downloads (month): {downloads:,}")
-            if likes:
-                summary_parts.append(f"Likes: {likes:,}")
-            if card_data.get("base_model"):
-                summary_parts.append(f"Base model: {card_data['base_model']}")
-
-            summary = " | ".join(summary_parts)
-
-            articles.append(Article(
-                title=title, link=link, summary=summary,
-                source="HuggingFace Trending",
-                category="hf_model",
-                published_at=iso_or_empty(now),
-                kind="hf_model",
-                trust_score=8,
-                extra={
-                    "downloads": downloads,
-                    "likes": likes,
-                    "pipeline_tag": pipeline_tag,
-                    "relevant_tags": list(relevant),
-                },
-            ))
-    except Exception as exc:
-        print(f"[WARN] HuggingFace trending models failed: {exc}", file=sys.stderr)
+                print(f"[WARN] arXiv fetch failed: {item.get('query')} - {exc}", file=sys.stderr)
+                time.sleep(4 + attempt * 4)
+        time.sleep(3)
     return articles
 
 
 def fetch_hf_daily_papers() -> List[Article]:
-    """
-    HuggingFace günün makalelerini çeker (papers.huggingface.co feed).
-    """
     articles: List[Article] = []
     try:
-        data = fetch_json("https://huggingface.co/api/daily_papers?limit=20")
+        data = fetch_json("https://huggingface.co/api/daily_papers?limit=15", headers=hf_headers())
         papers = data if isinstance(data, list) else []
-
-        for paper in papers[:20]:
+        for paper in papers[:15]:
             paper_info = paper.get("paper") or paper
             arxiv_id = paper_info.get("id", "") or paper_info.get("arxivId", "")
             title = clean_text(paper_info.get("title", ""))
             if not title:
                 continue
-
-            upvotes = paper.get("numComments", 0) or paper_info.get("upvotes", 0)
-            link = f"https://huggingface.co/papers/{arxiv_id}" if arxiv_id else "https://huggingface.co/papers"
             summary = clean_text(paper_info.get("summary", "") or paper_info.get("abstract", ""))
-            published_str = paper.get("publishedAt") or paper_info.get("publishedAt", "")
-            dt = parse_datetime(published_str)
-            if not is_recent(dt, MAX_AGE_HOURS * 2):  # HF papers için daha geniş pencere
+            dt = parse_datetime(paper.get("publishedAt") or paper_info.get("publishedAt", ""))
+            if not is_recent(dt, MAX_AGE_HOURS * 3):
                 continue
-
+            link = f"https://huggingface.co/papers/{arxiv_id}" if arxiv_id else "https://huggingface.co/papers"
             authors = [a.get("name", "") for a in (paper_info.get("authors") or [])[:3]]
-
             articles.append(Article(
-                title=f"📄 HF Paper: {title}",
-                link=link, summary=summary,
-                source="HuggingFace Papers",
-                category="hf_paper",
-                published_at=iso_or_empty(dt),
-                kind="hf_paper",
-                trust_score=9,
-                extra={
-                    "upvotes": upvotes,
-                    "arxiv_id": arxiv_id,
-                    "authors": authors,
-                },
+                title=f"HF Paper: {title}", link=link, summary=summary, source="HuggingFace Papers",
+                category="hf_paper", published_at=iso_or_empty(dt), kind="hf_paper", trust_score=9,
+                extra={"arxiv_id": arxiv_id, "authors": authors},
             ))
     except Exception as exc:
         print(f"[WARN] HuggingFace daily papers failed: {exc}", file=sys.stderr)
     return articles
 
 
-# ---------------------------------------------------------------------------
-# NEW: GitHub Trending
-# ---------------------------------------------------------------------------
+def fetch_hf_trending_models() -> List[Article]:
+    if not ENABLE_HF_TRENDING:
+        return []
+    articles: List[Article] = []
+    try:
+        data = fetch_json("https://huggingface.co/api/trending-repos?limit=20&type=model", headers=hf_headers())
+        repos = data if isinstance(data, list) else data.get("recentlyTrending", [])
+        now = datetime.now(timezone.utc)
+        for repo in repos[:20]:
+            repo_data = repo.get("repoData") or repo
+            repo_id = repo.get("id") or repo_data.get("id") or ""
+            if not repo_id:
+                continue
+            pipeline_tag = repo_data.get("pipeline_tag", "") or ""
+            tags = list(repo_data.get("tags") or [])
+            if pipeline_tag:
+                tags.append(pipeline_tag)
+            relevant = HF_RELEVANT_TAGS.intersection(set(t.lower() for t in tags))
+            downloads = repo_data.get("downloads", 0) or 0
+            likes = repo_data.get("likes", 0) or 0
+            if not relevant and downloads < 5000:
+                continue
+            articles.append(Article(
+                title=f"HF Model Trend: {repo_id}", link=f"https://huggingface.co/{repo_id}",
+                summary=f"Task: {pipeline_tag} | Tags: {', '.join(tags[:6])} | Downloads: {downloads:,} | Likes: {likes:,}",
+                source="HuggingFace Trending", category="hf_model", published_at=iso_or_empty(now),
+                kind="hf_model", trust_score=8,
+                extra={"downloads": downloads, "likes": likes, "pipeline_tag": pipeline_tag, "relevant_tags": list(relevant)},
+            ))
+    except Exception as exc:
+        print(f"[WARN] HuggingFace trending models failed: {exc}", file=sys.stderr)
+    return articles
+
+
+def fetch_github_releases() -> List[Article]:
+    articles: List[Article] = []
+    headers = github_headers()
+    for repo_info in GITHUB_WATCH_REPOS:
+        owner, repo = repo_info["owner"], repo_info["repo"]
+        try:
+            releases = fetch_json(f"https://api.github.com/repos/{owner}/{repo}/releases?per_page=2", headers=headers)
+            if not isinstance(releases, list):
+                continue
+            for release in releases[:2]:
+                if release.get("prerelease"):
+                    continue
+                dt = parse_datetime(release.get("published_at") or release.get("created_at", ""))
+                if not is_recent(dt, MAX_AGE_HOURS * 4):
+                    continue
+                tag = release.get("tag_name", "")
+                body = clean_text(release.get("body", ""))
+                articles.append(Article(
+                    title=f"Release: {owner}/{repo} {tag}",
+                    link=release.get("html_url", f"https://github.com/{owner}/{repo}/releases"),
+                    summary=shorten(body, 420) if body else f"{owner}/{repo} için {tag} sürümü yayınlandı.",
+                    source=f"GitHub: {owner}/{repo}", category=repo_info.get("category", "github_release"),
+                    published_at=iso_or_empty(dt), kind="github_release", trust_score=int(repo_info.get("trust_score", 8)),
+                    extra={"tag": tag, "repo": f"{owner}/{repo}"},
+                ))
+            time.sleep(0.25)
+        except Exception as exc:
+            print(f"[WARN] GitHub release fetch failed: {owner}/{repo} - {exc}", file=sys.stderr)
+    return articles
+
 
 def fetch_github_trending() -> List[Article]:
-    """
-    GitHub Trending sayfasını çeker (web scraping, resmi API yok).
-    """
+    if not ENABLE_GITHUB_TRENDING:
+        return []
     articles: List[Article] = []
-    urls = [
-        ("https://github.com/trending/python?since=daily", "Python"),
-        ("https://github.com/trending/c%2B%2B?since=daily", "C++"),
-        ("https://github.com/trending?since=daily", "All"),
-    ]
-    # Filtre kelimeleri — AI/robotics/vision ile alakalı olanlara odaklan
-    filter_keywords = {
-        "robot", "drone", "uav", "vision", "detection", "yolo", "ai", "ml",
-        "deep", "neural", "llm", "model", "inference", "edge", "jetson",
-        "hailo", "cuda", "tracking", "slam", "autonomous", "nav", "control",
-        "simulation", "gym", "rl", "reinforcement", "diffusion", "transformer",
-        "segment", "point cloud", "lidar", "3d",
-    }
+    urls = [("https://github.com/trending/python?since=daily", "Python"), ("https://github.com/trending?since=daily", "All")]
+    filter_keywords = {"robot", "drone", "uav", "vision", "detection", "yolo", "ai", "ml", "inference", "edge", "jetson", "tracking", "slam", "autonomous", "rl", "diffusion", "transformer", "segment", "lidar", "3d"}
     now = datetime.now(timezone.utc)
-
     for url, lang in urls:
         try:
             content = fetch_url(url).decode("utf-8", errors="ignore")
-            # Basit regex parse — tam HTML parse kütüphanesi eklemekten kaçınmak için
-            repo_blocks = re.findall(
-                r'<article[^>]*class="[^"]*Box-row[^"]*"[^>]*>(.*?)</article>',
-                content, re.DOTALL
-            )
-            for block in repo_blocks[:25]:
-                # Repo adı
+            repo_blocks = re.findall(r'<article[^>]*class="[^"]*Box-row[^"]*"[^>]*>(.*?)</article>', content, re.DOTALL)
+            for block in repo_blocks[:15]:
                 name_match = re.search(r'href="/([^"]+)"[^>]*>\s*([^<]+)\s*</a>', block)
                 if not name_match:
                     continue
                 repo_path = name_match.group(1).strip()
                 if repo_path.count("/") != 1:
-                    continue  # Sadece owner/repo formatı
-
-                # Açıklama
+                    continue
                 desc_match = re.search(r'<p[^>]*class="[^"]*col-9[^"]*"[^>]*>(.*?)</p>', block, re.DOTALL)
                 description = clean_text(desc_match.group(1)) if desc_match else ""
-
-                # Stars
-                stars_match = re.search(r'([\d,]+)\s*stars', block)
-                stars = int(stars_match.group(1).replace(",", "")) if stars_match else 0
-
-                # Bugün kazanılan yıldız
-                today_match = re.search(r'([\d,]+)\s*stars today', block)
-                stars_today = int(today_match.group(1).replace(",", "")) if today_match else 0
-
-                # Filtrele
                 searchable = f"{repo_path} {description}".lower()
                 if not any(kw in searchable for kw in filter_keywords):
                     continue
-
-                link = f"https://github.com/{repo_path}"
-                title = f"⭐ GitHub Trend: {repo_path}"
-                summary = description
-                if stars_today:
-                    summary += f" | +{stars_today} stars today"
-                if stars:
-                    summary += f" | Total: {stars:,}★"
-                if lang != "All":
-                    summary += f" | Lang: {lang}"
-
+                stars_today = 0
+                today_match = re.search(r'([\d,]+)\s*stars today', block)
+                if today_match:
+                    stars_today = int(today_match.group(1).replace(",", ""))
                 articles.append(Article(
-                    title=title, link=link, summary=summary,
-                    source="GitHub Trending",
-                    category="github_trending",
-                    published_at=iso_or_empty(now),
-                    kind="github_trending",
-                    trust_score=7,
-                    extra={"stars": stars, "stars_today": stars_today, "language": lang},
+                    title=f"GitHub Trend: {repo_path}", link=f"https://github.com/{repo_path}",
+                    summary=f"{description} | +{stars_today} stars today | Lang: {lang}",
+                    source="GitHub Trending", category="github_trending", published_at=iso_or_empty(now),
+                    kind="github_trending", trust_score=7, extra={"stars_today": stars_today, "language": lang},
                 ))
         except Exception as exc:
             print(f"[WARN] GitHub trending fetch failed ({lang}): {exc}", file=sys.stderr)
-
     return articles
 
-
-# ---------------------------------------------------------------------------
-# NEW: GitHub Releases
-# ---------------------------------------------------------------------------
-
-def fetch_github_releases() -> List[Article]:
-    """
-    Kritik repoların son release'lerini GitHub API ile çeker.
-    GITHUB_TOKEN opsiyonel ama rate-limit için önerilir.
-    """
-    articles: List[Article] = []
-    headers = github_headers()
-
-    for repo_info in GITHUB_WATCH_REPOS:
-        owner = repo_info["owner"]
-        repo = repo_info["repo"]
-        try:
-            url = f"https://api.github.com/repos/{owner}/{repo}/releases?per_page=3"
-            releases = fetch_json(url, headers=headers)
-            if not isinstance(releases, list):
-                continue
-            for release in releases[:3]:
-                published_str = release.get("published_at") or release.get("created_at", "")
-                dt = parse_datetime(published_str)
-                if not is_recent(dt, MAX_AGE_HOURS * 3):  # Release'ler için daha geniş pencere
-                    break  # releases tarih sıralıdır, daha eskisi olmaz
-
-                tag = release.get("tag_name", "")
-                name = release.get("name") or tag
-                body = clean_text(release.get("body", ""))
-                html_url = release.get("html_url", f"https://github.com/{owner}/{repo}/releases")
-                prerelease = release.get("prerelease", False)
-
-                if prerelease:
-                    continue  # Pre-release'leri atla
-
-                title = f"🚀 Release: {owner}/{repo} {tag}"
-                summary = shorten(body, 500) if body else f"{name} yayınlandı."
-
-                articles.append(Article(
-                    title=title, link=html_url, summary=summary,
-                    source=f"GitHub: {owner}/{repo}",
-                    category=repo_info.get("category", "github_release"),
-                    published_at=iso_or_empty(dt),
-                    kind="github_release",
-                    trust_score=int(repo_info.get("trust_score", 8)),
-                    extra={"tag": tag, "repo": f"{owner}/{repo}"},
-                ))
-            time.sleep(0.3)
-        except requests.exceptions.HTTPError as exc:
-            status = getattr(exc.response, "status_code", None)
-            if status == 404:
-                print(f"[INFO] GitHub releases skipped: {owner}/{repo} has no releases or repo moved.", file=sys.stderr)
-            else:
-                print(f"[WARN] GitHub release fetch failed: {owner}/{repo} - {exc}", file=sys.stderr)
-        except Exception as exc:
-            print(f"[WARN] GitHub release fetch failed: {owner}/{repo} - {exc}", file=sys.stderr)
-
-    return articles
-
-
-# ---------------------------------------------------------------------------
-# NEW: Papers With Code
-# ---------------------------------------------------------------------------
-
-def fetch_papers_with_code(tasks: List[str]) -> List[Article]:
-    """
-    Papers With Code API'sinden en son SOTA makalelerini çeker.
-    https://paperswithcode.com/api/v1/papers/
-    """
-    articles: List[Article] = []
-    base_url = "https://paperswithcode.com/api/v1/papers/"
-
-    for task in tasks:
-        try:
-            url = f"{base_url}?task={urllib.parse.quote(task)}&ordering=-published&items_per_page=5"
-            data = fetch_json(url)
-            results = data.get("results") or []
-
-            for paper in results[:5]:
-                title = clean_text(paper.get("title", ""))
-                if not title:
-                    continue
-                abstract = clean_text(paper.get("abstract", ""))
-                arxiv_id = paper.get("arxiv_id", "")
-                url_paper = paper.get("url_pdf") or (f"https://arxiv.org/abs/{arxiv_id}" if arxiv_id else "")
-                if not url_paper:
-                    url_paper = f"https://paperswithcode.com/paper/{paper.get('id', '')}"
-                published_str = paper.get("published", "")
-                dt = parse_datetime(published_str)
-                if not is_recent(dt, MAX_AGE_HOURS * 4):
-                    continue
-
-                github_link = ""
-                repos = paper.get("repositories", [])
-                if repos and isinstance(repos, list):
-                    github_link = repos[0].get("url", "") if repos else ""
-
-                stars_sum = sum(r.get("stars", 0) for r in repos if isinstance(r, dict))
-
-                summary = shorten(abstract, 500)
-                if github_link:
-                    summary += f" | Code: {github_link}"
-                if stars_sum:
-                    summary += f" | Repo stars: {stars_sum:,}"
-
-                articles.append(Article(
-                    title=f"📊 PWC [{task}]: {title}",
-                    link=url_paper, summary=summary,
-                    source="Papers With Code",
-                    category="papers_with_code",
-                    published_at=iso_or_empty(dt),
-                    kind="papers_with_code",
-                    trust_score=8,
-                    extra={"task": task, "has_code": bool(github_link), "repo_stars": stars_sum},
-                ))
-            time.sleep(0.5)
-        except Exception as exc:
-            print(f"[WARN] Papers With Code failed ({task}): {exc}", file=sys.stderr)
-
-    return articles
-
-
-# ---------------------------------------------------------------------------
-# NEW: Semantic Scholar
-# ---------------------------------------------------------------------------
 
 def fetch_semantic_scholar(queries: List[Dict[str, Any]]) -> List[Article]:
-    """
-    Semantic Scholar API ile son makaleleri çeker.
-    Citation count + influence score ile önem sıralı.
-    https://api.semanticscholar.org/graph/v1/paper/search
-    """
+    if not ENABLE_SEMANTIC_SCHOLAR:
+        return []
     articles: List[Article] = []
     base_url = "https://api.semanticscholar.org/graph/v1/paper/search"
     fields = "title,abstract,year,authors,citationCount,influentialCitationCount,externalIds,publicationDate,openAccessPdf"
-    max_queries = int(os.getenv("SEMANTIC_SCHOLAR_MAX_QUERIES", "2"))
-    delay = float(os.getenv("SEMANTIC_SCHOLAR_DELAY_SECONDS", "4.0"))
-
-    for item in queries[:max_queries]:
+    headers = {"User-Agent": "AI-Intel-Telegram-Bot/3.0"}
+    if SEMANTIC_SCHOLAR_API_KEY:
+        headers["x-api-key"] = SEMANTIC_SCHOLAR_API_KEY
+    for item in queries[:SEMANTIC_SCHOLAR_MAX_QUERIES]:
         try:
-            time.sleep(delay)
-            params = {
-                "query": item["query"],
-                "fields": fields,
-                "limit": 5,
-                "sort": "citationCount",
-            }
+            params = {"query": item["query"], "fields": fields, "limit": 5, "sort": "citationCount"}
             if item.get("year_filter"):
                 params["year"] = item["year_filter"]
-
-            url = f"{base_url}?{urllib.parse.urlencode(params)}"
-            data = fetch_json(url)
-            papers = data.get("data") or []
-
-            for paper in papers[:8]:
+            data = fetch_json(f"{base_url}?{urllib.parse.urlencode(params)}", headers=headers)
+            for paper in (data.get("data") or [])[:5]:
                 title = clean_text(paper.get("title", ""))
                 if not title:
                     continue
                 abstract = clean_text(paper.get("abstract", "") or "")
                 citation_count = paper.get("citationCount", 0) or 0
                 influential = paper.get("influentialCitationCount", 0) or 0
-
-                # Çok alıntılı ama çok eski makaleleri filtrele
-                pub_date = paper.get("publicationDate", "")
-                dt = parse_datetime(pub_date)
-                if dt and not is_recent(dt, MAX_AGE_HOURS * 24):  # 1 ay
-                    if citation_count < 50:  # Yeni ve az alıntılı ise atla
-                        continue
-
+                dt = parse_datetime(paper.get("publicationDate", ""))
                 external_ids = paper.get("externalIds") or {}
                 arxiv_id = external_ids.get("ArXiv", "")
                 doi = external_ids.get("DOI", "")
-
-                if arxiv_id:
-                    link = f"https://arxiv.org/abs/{arxiv_id}"
-                elif doi:
-                    link = f"https://doi.org/{doi}"
-                else:
-                    paper_id = paper.get("paperId", "")
-                    link = f"https://www.semanticscholar.org/paper/{paper_id}"
-
-                pdf_link = ""
-                if paper.get("openAccessPdf"):
-                    pdf_link = paper["openAccessPdf"].get("url", "")
-
+                link = f"https://arxiv.org/abs/{arxiv_id}" if arxiv_id else (f"https://doi.org/{doi}" if doi else f"https://www.semanticscholar.org/paper/{paper.get('paperId', '')}")
                 authors = [a.get("name", "") for a in (paper.get("authors") or [])[:3]]
-                summary_parts = [abstract[:400]] if abstract else []
-                summary_parts.append(f"Cited by: {citation_count} | Influential: {influential}")
-                if authors:
-                    summary_parts.append(f"Authors: {', '.join(authors)}")
-                if pdf_link:
-                    summary_parts.append(f"PDF: {pdf_link}")
-
                 articles.append(Article(
-                    title=f"🎓 S2: {title}",
-                    link=link, summary=" | ".join(summary_parts),
-                    source="Semantic Scholar",
-                    category=item.get("category", "semantic_scholar"),
-                    published_at=iso_or_empty(dt),
-                    kind="semantic_scholar",
-                    trust_score=int(item.get("trust_score", 8)),
-                    extra={
-                        "citation_count": citation_count,
-                        "influential_citations": influential,
-                        "has_pdf": bool(pdf_link),
-                    },
+                    title=f"S2: {title}", link=link,
+                    summary=f"{abstract[:360]} | Cited by: {citation_count} | Influential: {influential} | Authors: {', '.join(authors)}",
+                    source="Semantic Scholar", category=item.get("category", "semantic_scholar"),
+                    published_at=iso_or_empty(dt), kind="semantic_scholar", trust_score=int(item.get("trust_score", 8)),
+                    extra={"citation_count": citation_count, "influential_citations": influential},
                 ))
-            time.sleep(1.0)  # S2 API rate limit
+            time.sleep(2)
         except Exception as exc:
             print(f"[WARN] Semantic Scholar failed ({item.get('query')}): {exc}", file=sys.stderr)
-
     return articles
 
-
-# ---------------------------------------------------------------------------
-# Scoring & deduplication
-# ---------------------------------------------------------------------------
 
 def normalized_key(text: str) -> str:
     text = text.lower()
     text = re.sub(r"https?://\S+", "", text)
     text = re.sub(r"[^a-z0-9ığüşöçİĞÜŞÖÇ]+", " ", text)
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
+    return re.sub(r"\s+", " ", text).strip()
 
 
 def url_key(url: str) -> str:
@@ -889,14 +571,11 @@ def looks_noisy(article: Article) -> bool:
 def score_article(article: Article) -> Article:
     blob = f"{article.title} {article.summary} {article.source}".lower()
     matched = []
-    score = CATEGORY_BASE_SCORE.get(article.category, 10)
-    score += article.trust_score * 2
-
+    score = CATEGORY_BASE_SCORE.get(article.category, 10) + article.trust_score * 2
     for keyword, weight in KEYWORD_WEIGHTS.items():
         if keyword.lower() in blob:
             matched.append(keyword)
             score += weight
-
     dt = parse_datetime(article.published_at)
     if dt:
         age_hours = (datetime.now(timezone.utc) - dt).total_seconds() / 3600
@@ -908,19 +587,14 @@ def score_article(article: Article) -> Article:
             score += 4
         elif age_hours <= 168:
             score += 1
-
     title_lower = article.title.lower()
     for keyword, weight in KEYWORD_WEIGHTS.items():
         if keyword.lower() in title_lower:
             score += min(weight, 12)
-
-    # Kind-specific bonus
     if article.kind == "arxiv":
         score += 8
     elif article.kind == "hf_paper":
         score += 10
-        upvotes = article.extra.get("upvotes", 0) or 0
-        score += min(upvotes // 5, 15)
     elif article.kind == "hf_model":
         downloads = article.extra.get("downloads", 0) or 0
         likes = article.extra.get("likes", 0) or 0
@@ -928,38 +602,25 @@ def score_article(article: Article) -> Article:
         if article.extra.get("relevant_tags"):
             score += 8
     elif article.kind == "github_release":
-        score += 12  # Release'ler her zaman önemli
+        score += 12
     elif article.kind == "github_trending":
-        stars_today = article.extra.get("stars_today", 0) or 0
-        score += min(stars_today // 50, 12)
-    elif article.kind == "papers_with_code":
-        score += 7
-        if article.extra.get("has_code"):
-            score += 5
-        repo_stars = article.extra.get("repo_stars", 0) or 0
-        score += min(repo_stars // 500, 8)
+        score += min((article.extra.get("stars_today", 0) or 0) // 50, 12)
     elif article.kind == "semantic_scholar":
-        influential = article.extra.get("influential_citations", 0) or 0
-        score += min(influential // 2, 12)
-
+        score += min((article.extra.get("influential_citations", 0) or 0) // 2, 12)
     if looks_noisy(article):
         score -= 30
-
     article.score = max(score, 0)
     article.matched_keywords = sorted(set(matched))[:10]
     return article
 
 
 def deduplicate(articles: Iterable[Article]) -> List[Article]:
-    seen_urls = set()
-    seen_titles = set()
-    unique: List[Article] = []
+    seen_urls, seen_titles, unique = set(), set(), []
     for article in articles:
         if not article.title or not article.link:
             continue
         uk = url_key(article.link)
-        tk = normalized_key(article.title)
-        tk_short = " ".join(tk.split()[:14])
+        tk_short = " ".join(normalized_key(article.title).split()[:14])
         if uk in seen_urls or tk_short in seen_titles:
             continue
         seen_urls.add(uk)
@@ -968,44 +629,25 @@ def deduplicate(articles: Iterable[Article]) -> List[Article]:
     return unique
 
 
-# ---------------------------------------------------------------------------
-# Collect
-# ---------------------------------------------------------------------------
-
 def collect_articles() -> List[Article]:
     sources = load_sources()
     articles: List[Article] = []
-
     print("[INFO] Fetching RSS sources...", file=sys.stderr)
     articles.extend(fetch_rss_sources(sources.get("rss_sources", [])))
-
     print("[INFO] Fetching Google News...", file=sys.stderr)
     articles.extend(fetch_google_news(sources.get("google_news_queries", [])))
-
     print("[INFO] Fetching arXiv...", file=sys.stderr)
     articles.extend(fetch_arxiv(sources.get("arxiv_queries", [])))
-
-    print("[INFO] Fetching HuggingFace trending models...", file=sys.stderr)
-    articles.extend(fetch_hf_trending_models())
-
     print("[INFO] Fetching HuggingFace daily papers...", file=sys.stderr)
     articles.extend(fetch_hf_daily_papers())
-
+    print("[INFO] Fetching HuggingFace trending models...", file=sys.stderr)
+    articles.extend(fetch_hf_trending_models())
     print("[INFO] Fetching GitHub releases...", file=sys.stderr)
     articles.extend(fetch_github_releases())
-
     print("[INFO] Fetching GitHub trending...", file=sys.stderr)
     articles.extend(fetch_github_trending())
-
-    if ENABLE_PWC:
-        print("[INFO] Fetching Papers With Code...", file=sys.stderr)
-        articles.extend(fetch_papers_with_code(PWC_TASKS))
-    else:
-        print("[INFO] Papers With Code disabled by default. Set ENABLE_PWC=true to enable.", file=sys.stderr)
-
     print("[INFO] Fetching Semantic Scholar...", file=sys.stderr)
     articles.extend(fetch_semantic_scholar(sources.get("semantic_scholar_queries", [])))
-
     print(f"[INFO] Raw total: {len(articles)}", file=sys.stderr)
     articles = deduplicate(articles)
     articles = [score_article(a) for a in articles]
@@ -1015,206 +657,239 @@ def collect_articles() -> List[Article]:
     return final
 
 
-# ---------------------------------------------------------------------------
-# Prompt & generation
-# ---------------------------------------------------------------------------
-
-def build_prompt(articles: List[Article]) -> str:
+def build_json_prompt(articles: List[Article]) -> str:
     now_tr = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=3))).strftime("%d.%m.%Y %H:%M")
     data = [a.to_prompt_dict() for a in articles]
-    mode_label = "haftalık derin trend raporu" if BULLETIN_MODE == "weekly" else "günlük teknoloji istihbarat bülteni"
-
-    # Kaynak dağılımını özetle
-    kind_counts: Dict[str, int] = {}
-    for a in articles:
-        kind_counts[a.kind] = kind_counts.get(a.kind, 0) + 1
-
-    kind_summary = ", ".join(f"{k}:{v}" for k, v in sorted(kind_counts.items(), key=lambda x: -x[1]))
-
-    if BULLETIN_MODE == "weekly":
-        task = f"""
-Bu haber/makale listesinden haftalık bir AI + savunma sanayi + robotik + UAV + edge AI trend raporu üret.
-
-Rapor yapısı:
-1. Yönetici özeti: 5-6 madde.
-2. Bu haftanın ana trendleri: 6 başlık.
-3. Kategori bazlı analiz:
-   - Savunma AI / Military AI
-   - UAV / Drone / Counter-UAS
-   - Robotik / Humanoid / Embodied AI
-   - Computer Vision / Edge AI
-   - HuggingFace model & paper sinyalleri
-   - GitHub release & trending sinyalleri
-   - Papers With Code SOTA kırılmaları
-   - Akademik (arXiv + Semantic Scholar) sinyalleri
-   - Türkiye savunma sanayi notları
-4. En önemli {BULLETIN_ITEMS} gelişme:
-   Her biri için başlık, kaynak türü, 2-3 cümle özet, stratejik önem, teknik çıkarım, link.
-5. Rabia'nın İHA / computer vision / edge AI / OnkoNixAI açısından takip notları.
-6. Gelecek hafta izlenecek anahtar kelimeler ve repolar.
-"""
-    else:
-        task = f"""
-Bu haber/makale listesinden Türkçe {mode_label} üret.
-
-Bülten yapısı:
-- Başlık: 🤖 Günlük AI + Savunma + Robotik Bülteni — {now_tr}
-- Önce 5-6 maddelik kısa radar özeti ver.
-- Sonra en önemli {BULLETIN_ITEMS} gelişmeyi kategori bazlı sırala.
-- Her gelişme için:
-  1) Başlık
-  2) Kaynak türü (haber / arXiv / HF model / HF paper / GitHub release / GitHub trend / Papers With Code / Semantic Scholar)
-  3) Kısa özet: 2-3 cümle
-  4) Neden önemli?
-  5) İHA / robotik / savunma / edge AI açısından teknik çıkarım
-  6) Kaynak linki
-- HuggingFace model trendlerini "Model Sinyali" olarak işaretle; downloads ve likes sayısını belirt.
-- GitHub release'leri "Kritik Güncelleme" olarak öne çıkar.
-- Papers With Code girişlerini "SOTA Kırılması" olarak belirt; koda erişim olup olmadığını yaz.
-- Semantic Scholar girişlerini "Etkili Makale" olarak belirt; citation sayısını yaz.
-- Akademik arXiv girdilerini "Araştırma Sinyali" olarak belirt.
-- En sona "Bugünün stratejik trend yorumu" ve "Takip edilmesi gereken repolar" ekle.
-"""
-
+    items = 10 if BULLETIN_MODE == "weekly" else BULLETIN_ITEMS
     return f"""
-Sen Rabia için çalışan teknik bir AI mühendislik haber analisti gibi davranıyorsun.
-Rabia'nın ilgi alanları: savunma sanayi, UAV/İHA, computer vision, edge AI, robotik, sürü robotik, autonomous systems, counter-UAS, NVIDIA Jetson/Hailo, YOLO/object tracking, medikal AI ve OnkoNixAI.
+Sen teknik bir AI + savunma sanayi + robotik haber analistisin.
+Kullanıcı Rabia; ilgi alanları: UAV/İHA, savunma sanayi, counter-UAS, computer vision, edge AI, YOLO, Hailo/NVIDIA Jetson, robotik, sürü sistemleri, medikal AI ve OnkoNixAI.
 
-Bugünkü veri kaynakları: {kind_summary}
-Toplam aday: {len(articles)} öğe
+Görev: Aşağıdaki adaylardan Telegram için kısa, düzenli ve teknik Türkçe bülten üret.
 
-Kurallar:
-- Türkçe yaz.
-- Teknik ama okunabilir ol.
-- Abartılı pazarlama dili kullanma.
-- HuggingFace modellerini açıklarken pipeline task'ı, download sayısı ve ilgili tagları belirt.
-- GitHub release'lerde versiyon numarasını ve öne çıkan değişikliği söyle.
-- Papers With Code'da SOTA kırılan benchmark ve dataset adını belirt.
-- Semantic Scholar'da citation count ve influential citation'ı yaz.
-- Aynı konuyu tekrar etme.
-- Linkleri mutlaka koru.
-- Telegram mesajı için sade metin üret; Markdown tablo kullanma.
-- Çok uzun yazma; yoğun ama okunabilir olsun.
+ÇIKTI KURALI:
+- Sadece geçerli JSON döndür.
+- Markdown kullanma.
+- **, *, #, tablo, [link](url) kullanma.
+- Link alanını aynen JSON field olarak ver.
+- Her metin kısa olsun.
+- summary en fazla 280 karakter.
+- why_important en fazla 240 karakter.
+- technical_note en fazla 260 karakter.
+- radar maddeleri en fazla 130 karakter.
+- trend_commentary en fazla 700 karakter.
 
-{task}
+JSON ŞEMASI:
+{{
+  "title": "Günlük AI + Savunma + Robotik Bülteni",
+  "date": "{now_tr}",
+  "radar": ["madde 1", "madde 2", "madde 3", "madde 4", "madde 5"],
+  "items": [
+    {{
+      "title": "kısa başlık",
+      "category": "kategori",
+      "source_type": "haber | arXiv | HF paper | HF model | GitHub release | GitHub trend | Semantic Scholar",
+      "source": "kaynak adı",
+      "score": 0,
+      "signal_label": "Kritik Güncelleme | Araştırma Sinyali | Model Sinyali | Saha Sinyali | Stratejik Haber",
+      "summary": "2 cümlelik kısa özet",
+      "why_important": "neden önemli",
+      "technical_note": "İHA / robotik / savunma / edge AI açısından teknik çıkarım",
+      "link": "https://..."
+    }}
+  ],
+  "trend_commentary": "bugünün stratejik trend yorumu",
+  "watch_repos": ["repo1", "repo2", "repo3"]
+}}
 
-Aday haberler ve makaleler JSON:
+Seçilecek item sayısı: {items}
+Mod: {BULLETIN_MODE}
+
+Adaylar:
 {json.dumps(data, ensure_ascii=False, indent=2)}
 """.strip()
 
 
-def is_retryable_gemini_error(exc: Exception) -> bool:
-    msg = str(exc).lower()
-    return any(token in msg for token in ["503", "unavailable", "high demand", "429", "resource_exhausted", "rate limit"])
+def strip_json_fence(text: str) -> str:
+    text = text.strip()
+    text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s*```$", "", text)
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        return text[start:end + 1]
+    return text
 
 
-def candidate_gemini_models() -> List[str]:
-    models: List[str] = []
-    for model in [GEMINI_MODEL] + GEMINI_FALLBACK_MODELS:
-        if model and model not in models:
-            models.append(model)
-    return models
-
-
-def generate_bulletin(articles: List[Article]) -> str:
+def generate_structured_bulletin(articles: List[Article]) -> Dict[str, Any]:
     if not GEMINI_API_KEY:
         raise RuntimeError("GEMINI_API_KEY eksik. GitHub Secrets içine ekleyin.")
-
     client = genai.Client(api_key=GEMINI_API_KEY)
-    prompt = build_prompt(articles)
-    last_error: Optional[Exception] = None
-
-    for model in candidate_gemini_models():
+    primary = WEEKLY_GEMINI_MODEL if BULLETIN_MODE == "weekly" else GEMINI_MODEL
+    models = []
+    for model in [primary] + GEMINI_FALLBACK_MODELS:
+        if model and model not in models:
+            models.append(model)
+    prompt = build_json_prompt(articles)
+    last_error = None
+    for model in models:
         for attempt in range(1, GEMINI_MAX_RETRIES + 1):
             try:
-                print(f"[INFO] Gemini generate: model={model}, attempt={attempt}", file=sys.stderr)
-                response = client.models.generate_content(
-                    model=model,
-                    contents=prompt,
-                )
+                print(f"[INFO] Gemini model={model} attempt={attempt}", file=sys.stderr)
+                response = client.models.generate_content(model=model, contents=prompt)
                 text = getattr(response, "text", None) or str(response)
-                text = text.replace("\\n", "\n")
-                return clean_text_preserve_lines(text)
+                parsed = json.loads(strip_json_fence(text))
+                if not isinstance(parsed.get("items"), list):
+                    raise ValueError("Gemini JSON içinde items listesi yok.")
+                return parsed
             except Exception as exc:
                 last_error = exc
-                if not is_retryable_gemini_error(exc) or attempt >= GEMINI_MAX_RETRIES:
-                    print(f"[WARN] Gemini failed: model={model}, attempt={attempt}, error={exc}", file=sys.stderr)
-                    break
-                sleep_seconds = min(45, 8 * attempt)
-                print(f"[WARN] Gemini temporary error. Retrying in {sleep_seconds}s: {exc}", file=sys.stderr)
-                time.sleep(sleep_seconds)
+                print(f"[WARN] Gemini failed model={model} attempt={attempt}: {exc}", file=sys.stderr)
+                time.sleep(min(12, 2 * attempt))
+    raise RuntimeError(f"Gemini tüm modellerde başarısız oldu: {last_error}")
 
-    raise RuntimeError(f"Gemini summary failed after model fallbacks: {last_error}")
 
-def send_telegram_message(message: str) -> None:
+def h(value: Any) -> str:
+    return html.escape(clean_text(value), quote=True)
+
+
+def link_html(url: str, label: str) -> str:
+    url = clean_text(url)
+    if not url:
+        return h(label)
+    safe_url = html.escape(url, quote=True)
+    safe_label = h(label or "Kaynak")
+    return f'<a href="{safe_url}">{safe_label}</a>'
+
+
+def clamp(value: Any, limit: int) -> str:
+    return h(shorten(clean_text(value), limit))
+
+
+def render_bulletin_blocks(data: Dict[str, Any]) -> List[str]:
+    now_tr = data.get("date") or datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=3))).strftime("%d.%m.%Y %H:%M")
+    title = h(data.get("title") or "Günlük AI + Savunma + Robotik Bülteni")
+    radar = data.get("radar") or []
+    items = data.get("items") or []
+    blocks: List[str] = []
+
+    header_lines = [
+        f"🤖 <b>{title}</b>",
+        f"🕘 {h(now_tr)} • {len(items)} seçili gelişme",
+        "",
+        "⚡ <b>Kısa Radar</b>",
+    ]
+    for r in radar[:6]:
+        header_lines.append(f"• {clamp(r, 150)}")
+    blocks.append("\n".join(header_lines).strip())
+
+    for idx, item in enumerate(items[: max(BULLETIN_ITEMS, 10) if BULLETIN_MODE == "weekly" else BULLETIN_ITEMS], 1):
+        source_name = clean_text(item.get("source") or "Kaynak")
+        score = item.get("score", "")
+        signal = item.get("signal_label") or item.get("source_type") or "Gelişme"
+        category = item.get("category") or "Genel"
+        source_type = item.get("source_type") or "haber"
+        block = [
+            f"<b>{idx}. {clamp(item.get('title'), 180)}</b>",
+            f"🏷️ <b>{h(signal)}</b> • {h(category)}",
+            f"📍 Kaynak türü: {h(source_type)}" + (f" • Skor: {h(score)}" if str(score) else ""),
+            "",
+            f"🧩 <b>Özet</b>\n{clamp(item.get('summary'), 420)}",
+            "",
+            f"🎯 <b>Neden önemli?</b>\n{clamp(item.get('why_important'), 360)}",
+            "",
+            f"🛠️ <b>Teknik çıkarım</b>\n{clamp(item.get('technical_note'), 420)}",
+            "",
+            f"🔗 <b>Kaynak:</b> {link_html(item.get('link', ''), source_name)}",
+        ]
+        blocks.append("\n".join(block).strip())
+
+    tail_lines = []
+    if data.get("trend_commentary"):
+        tail_lines.extend(["📌 <b>Stratejik Trend Yorumu</b>", clamp(data.get("trend_commentary"), 900)])
+    repos = data.get("watch_repos") or []
+    if repos:
+        tail_lines.extend(["", "🐙 <b>Takip Edilecek Repolar / Alanlar</b>"])
+        for repo in repos[:6]:
+            tail_lines.append(f"• {clamp(repo, 110)}")
+    if tail_lines:
+        blocks.append("\n".join(tail_lines).strip())
+    return blocks
+
+
+def fallback_structured_bulletin(articles: List[Article]) -> Dict[str, Any]:
+    now_tr = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=3))).strftime("%d.%m.%Y %H:%M")
+    top = articles[:BULLETIN_ITEMS]
+    return {
+        "title": "Günlük AI + Savunma + Robotik Bülteni",
+        "date": now_tr,
+        "radar": [
+            "Gemini özetleme geçici olarak çalışmadı; en yüksek skorlu adaylar temiz kart formatında listelendi.",
+            "Kaynaklar RSS, Google News, arXiv, HuggingFace ve GitHub sinyallerinden derlendi.",
+            "Google News linkleri ham görünmemesi için Kaynak bağlantısı olarak gizlendi.",
+        ],
+        "items": [
+            {
+                "title": a.title,
+                "category": CATEGORY_LABELS.get(a.category, a.category),
+                "source_type": a.kind,
+                "source": a.source,
+                "score": round(a.score, 1),
+                "signal_label": "Ham Sinyal",
+                "summary": shorten(a.summary, 280),
+                "why_important": "Bu başlık skorlamada üst sıraya çıktı; savunma, robotik, UAV veya edge AI gündemiyle ilişkili olabilir.",
+                "technical_note": "Detaylı AI analizi üretilemediği için bu kart otomatik skor ve kaynak meta verisine göre oluşturuldu.",
+                "link": a.link,
+            }
+            for a in top
+        ],
+        "trend_commentary": "Gemini API geçici yoğunluk veya JSON üretim hatası nedeniyle otomatik fallback kullanıldı.",
+        "watch_repos": ["ultralytics/ultralytics", "huggingface/transformers", "ggerganov/llama.cpp"],
+    }
+
+
+def send_telegram_blocks(blocks: List[str]) -> None:
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         raise RuntimeError("TELEGRAM_BOT_TOKEN veya TELEGRAM_CHAT_ID eksik.")
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    chunks = split_message(message, 3900)
-    for chunk in chunks:
+    for block in blocks:
+        # Telegram HTML için güvenli sınır. Kart çok uzarsa kuyruğu kısalt.
+        if len(block) > 3900:
+            block = block[:3800] + "\n\n…"
         response = requests.post(
             url,
-            json={"chat_id": TELEGRAM_CHAT_ID, "text": chunk, "disable_web_page_preview": True},
+            json={
+                "chat_id": TELEGRAM_CHAT_ID,
+                "text": block,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": TELEGRAM_DISABLE_PREVIEW,
+            },
             timeout=REQUEST_TIMEOUT,
         )
         response.raise_for_status()
-        time.sleep(0.5)
-
-
-def split_message(message: str, max_len: int) -> List[str]:
-    if len(message) <= max_len:
-        return [message]
-    chunks = []
-    current = ""
-    for paragraph in message.split("\n"):
-        if len(current) + len(paragraph) + 1 <= max_len:
-            current += ("\n" if current else "") + paragraph
-        else:
-            if current:
-                chunks.append(current)
-            while len(paragraph) > max_len:
-                chunks.append(paragraph[:max_len])
-                paragraph = paragraph[max_len:]
-            current = paragraph
-    if current:
-        chunks.append(current)
-    return chunks
-
-
-def fallback_bulletin(articles: List[Article]) -> str:
-    now_tr = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=3))).strftime("%d.%m.%Y %H:%M")
-    lines = [f"🤖 AI + Savunma + Robotik Bülteni — {now_tr}", "", "Gemini özetleme çalışmadı; ham aday listesi.", ""]
-    for idx, article in enumerate(articles[:BULLETIN_ITEMS], 1):
-        lines.extend([
-            f"{idx}) [{article.kind.upper()}] {article.title}",
-            f"Kategori: {CATEGORY_LABELS.get(article.category, article.category)}",
-            f"Skor: {round(article.score, 1)} | Kaynak: {article.source}",
-            f"Özet: {shorten(article.summary, 260)}",
-            f"Link: {article.link}",
-            "",
-        ])
-    return "\n".join(lines)
+        time.sleep(0.45)
 
 
 def main() -> None:
     try:
         articles = collect_articles()
         if not articles:
-            send_telegram_message("Bugün AI + savunma + robotik alanında yeni aday haber bulunamadı.")
+            send_telegram_blocks(["Bugün AI + savunma + robotik alanında yeni aday haber bulunamadı."])
             return
         try:
-            bulletin = generate_bulletin(articles)
+            bulletin_data = generate_structured_bulletin(articles)
         except Exception as gemini_error:
-            print(f"[WARN] Gemini failed, using fallback: {gemini_error}", file=sys.stderr)
-            bulletin = fallback_bulletin(articles)
-        send_telegram_message(bulletin)
-        print(f"Sent bulletin with {len(articles)} candidate items.")
+            print(f"[WARN] Gemini failed, using structured fallback: {gemini_error}", file=sys.stderr)
+            bulletin_data = fallback_structured_bulletin(articles)
+        blocks = render_bulletin_blocks(bulletin_data)
+        send_telegram_blocks(blocks)
+        print(f"Sent bulletin with {len(articles)} candidate items and {len(blocks)} Telegram blocks.")
     except Exception as exc:
         err = "⚠️ AI haber botu hata aldı.\n\n" + shorten(traceback.format_exc(), 3000)
         print(err, file=sys.stderr)
         try:
             if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
-                send_telegram_message(err)
+                send_telegram_blocks([h(err)])
         finally:
             raise exc
 
