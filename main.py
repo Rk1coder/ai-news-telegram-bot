@@ -35,7 +35,7 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "").strip()
 BULLETIN_MODE = os.getenv("BULLETIN_MODE", "daily").strip().lower()
 MAX_AGE_HOURS = int(os.getenv("MAX_AGE_HOURS", "48"))
 MAX_CANDIDATES = int(os.getenv("MAX_CANDIDATES", "45"))
-BULLETIN_ITEMS = int(os.getenv("BULLETIN_ITEMS", "8"))
+BULLETIN_ITEMS = int(os.getenv("BULLETIN_ITEMS", "6"))
 REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "20"))
 
 CATEGORY_LABELS = {
@@ -474,72 +474,92 @@ def collect_articles() -> List[Article]:
     return articles[:MAX_CANDIDATES]
 
 
+def article_payload(article: Article, article_id: int) -> Dict[str, Any]:
+    data = article.to_prompt_dict()
+    data["id"] = article_id
+    return data
+
+
 def build_prompt(articles: List[Article]) -> str:
     now_tr = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=3))).strftime("%d.%m.%Y %H:%M")
-    data = [a.to_prompt_dict() for a in articles]
+    data = [article_payload(a, idx) for idx, a in enumerate(articles, 1)]
     mode_label = "haftalık derin trend raporu" if BULLETIN_MODE == "weekly" else "günlük teknoloji istihbarat bülteni"
+    item_limit = BULLETIN_ITEMS
 
     if BULLETIN_MODE == "weekly":
         task = f"""
-Bu haber/makale listesinden haftalık bir AI + savunma sanayi + robotik + UAV + edge AI trend raporu üret.
-
-Rapor yapısı:
-1. Kısa yönetici özeti: 4-6 madde.
-2. Bu haftanın ana trendleri: 5 başlık.
-3. Kategori bazlı analiz:
-   - Savunma AI / Military AI
-   - UAV / Drone / Counter-UAS
-   - Robotik / Humanoid / Embodied AI
-   - Computer Vision / Edge AI
-   - Akademik arXiv sinyalleri
-   - Türkiye savunma sanayi açısından notlar
-4. En önemli {BULLETIN_ITEMS} gelişme:
-   Her biri için başlık, kategori, 2-3 cümle özet, stratejik önem, teknik çıkarım ve link ver.
-5. Rabia'nın İHA, computer vision, edge AI ve OnkoNixAI çalışmaları açısından takip notları.
-6. Gelecek hafta takip edilecek anahtar kelimeler.
+Haftalık AI + savunma sanayi + robotik + UAV + edge AI trend raporu için yapılandırılmış JSON üret.
+En önemli {item_limit} gelişmeyi seç.
 """
+        expected = "weekly"
     else:
         task = f"""
-Bu haber/makale listesinden Türkçe {mode_label} üret.
-
-Bülten yapısı:
-- Başlık: 🤖 Günlük AI + Savunma + Robotik Bülteni — {now_tr}
-- Önce 5 maddelik kısa radar özeti ver.
-- Sonra en önemli {BULLETIN_ITEMS} gelişmeyi kategori bazlı sırala.
-- Her gelişme için şu alanları kullan:
-  1) Başlık
-  2) Kategori
-  3) Kısa özet: 2-3 cümle
-  4) Neden önemli?
-  5) İHA / robotik / savunma / edge AI açısından teknik çıkarım
-  6) Kaynak linki
-- Akademik arXiv girdilerini haber gibi değil, "Araştırma sinyali" olarak belirt.
-- En sona "Bugünün stratejik trend yorumu" ekle.
+Günlük AI + savunma sanayi + robotik + UAV + edge AI bülteni için yapılandırılmış JSON üret.
+En önemli {item_limit} gelişmeyi seç.
 """
+        expected = "daily"
 
     return f"""
 Sen Rabia için çalışan teknik bir AI haber analisti gibi davranıyorsun.
 Rabia'nın ilgi alanları: savunma sanayi, UAV/İHA, computer vision, edge AI, robotik, sürü robotik, autonomous systems, counter-UAS, NVIDIA Jetson/Hailo, YOLO/object tracking, medikal AI ve OnkoNixAI.
 
-Kurallar:
-- Türkçe yaz.
-- Teknik ama okunabilir ol.
-- Abartılı pazarlama dili kullanma.
-- Haberi kesin bilgi gibi sunmadan önce kaynak başlığı ve özetine dayan.
-- Belirsizse "takip edilmeli" veya "erken sinyal" olarak belirt.
-- Aynı konuyu tekrar etme.
-- Linkleri mutlaka koru.
-- Telegram mesajı için sade metin üret; Markdown tablo kullanma.
-- Çok uzun yazma; yoğun ama okunabilir olsun.
-
+Görev: {mode_label}
+Tarih: {now_tr}
 {task}
+
+ÇOK ÖNEMLİ ÇIKTI KURALLARI:
+- Sadece geçerli JSON döndür. Markdown, açıklama, kod bloğu, ```json kullanma.
+- Link üretme; sadece seçtiğin haberin id değerini kullan. Linki sistem kendisi ekleyecek.
+- item_id alanı aday haberlerdeki id ile aynı olmalı.
+- Cümleler kısa ve Telegram için okunabilir olsun.
+- Her özet en fazla 220 karakter olsun.
+- Her "why_it_matters" en fazla 180 karakter olsun.
+- Her "technical_note" en fazla 200 karakter olsun.
+- Radar maddeleri en fazla 110 karakter olsun.
+- Aynı konuyu tekrar etme.
+- Belirsizse kesin hüküm verme; "takip edilmeli", "erken sinyal" gibi ifadeler kullan.
+- Savunma/hassas konularda operasyonel talimat, silahlandırma veya zarar verme yönergesi yazma; sadece yüksek seviyeli analiz ver.
+
+Beklenen JSON şeması:
+{{
+  "type": "{expected}",
+  "title": "Günlük AI + Savunma + Robotik Radarı",
+  "radar": ["madde 1", "madde 2", "madde 3", "madde 4", "madde 5"],
+  "items": [
+    {{
+      "item_id": 1,
+      "category": "Counter-UAS / Drone Defense",
+      "title": "kısa başlık",
+      "summary": "2 cümleyi geçmeyen kısa özet",
+      "why_it_matters": "kısa önem analizi",
+      "technical_note": "İHA/robotik/edge AI açısından teknik çıkarım",
+      "confidence": "yüksek|orta|düşük"
+    }}
+  ],
+  "trend_comment": "Bugünün/haftanın ana trend yorumu. En fazla 450 karakter.",
+  "follow_keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"]
+}}
 
 Aday haberler ve makaleler JSON:
 {json.dumps(data, ensure_ascii=False, indent=2)}
 """.strip()
 
 
-def generate_bulletin(articles: List[Article]) -> str:
+def extract_json_object(text: str) -> Dict[str, Any]:
+    text = text.strip()
+    text = re.sub(r"^```(?:json)?\s*", "", text)
+    text = re.sub(r"\s*```$", "", text)
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        start = text.find("{")
+        end = text.rfind("}")
+        if start >= 0 and end > start:
+            return json.loads(text[start:end + 1])
+        raise
+
+
+def generate_structured_bulletin(articles: List[Article]) -> Dict[str, Any]:
     if not GEMINI_API_KEY:
         raise RuntimeError("GEMINI_API_KEY eksik. GitHub Secrets içine ekleyin.")
     client = genai.Client(api_key=GEMINI_API_KEY)
@@ -548,10 +568,102 @@ def generate_bulletin(articles: List[Article]) -> str:
         model=GEMINI_MODEL,
         contents=prompt,
     )
-    text = getattr(response, "text", None)
-    if not text:
-        text = str(response)
-    return clean_text(text).replace("\\n", "\n")
+    text = getattr(response, "text", None) or str(response)
+    return extract_json_object(text)
+
+
+def category_icon(category: str) -> str:
+    c = (category or "").lower()
+    if "counter" in c or "drone defense" in c:
+        return "🛡️"
+    if "uav" in c or "drone" in c or "iha" in c:
+        return "🚁"
+    if "robot" in c or "humanoid" in c:
+        return "🤖"
+    if "edge" in c or "vision" in c or "yolo" in c:
+        return "👁️"
+    if "akademik" in c or "arxiv" in c or "research" in c:
+        return "📄"
+    if "türkiye" in c or "turkey" in c or "savunma" in c:
+        return "🇹🇷"
+    return "•"
+
+
+def safe_html(text: Any, limit: int = None) -> str:
+    value = clean_text(text)
+    if limit:
+        value = shorten(value, limit)
+    return html.escape(value, quote=False)
+
+
+def article_map(articles: List[Article]) -> Dict[int, Article]:
+    return {idx: article for idx, article in enumerate(articles, 1)}
+
+
+def format_bulletin_html(payload: Dict[str, Any], articles: List[Article]) -> str:
+    now_tr = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=3))).strftime("%d.%m.%Y %H:%M")
+    by_id = article_map(articles)
+    mode_title = "Haftalık AI + Savunma + Robotik Raporu" if BULLETIN_MODE == "weekly" else "Günlük AI + Savunma + Robotik Radarı"
+
+    lines: List[str] = []
+    lines.append(f"<b>🤖 {safe_html(payload.get('title') or mode_title)}</b>")
+    lines.append(f"<i>{now_tr} • {len(payload.get('items', []))} seçili gelişme</i>")
+    lines.append("")
+
+    radar = payload.get("radar") or []
+    if radar:
+        lines.append("<b>⚡ Kısa radar</b>")
+        for point in radar[:5]:
+            lines.append(f"• {safe_html(point, 120)}")
+        lines.append("")
+
+    items = payload.get("items") or []
+    lines.append("<b>📌 Öne çıkan gelişmeler</b>")
+    lines.append("")
+
+    for index, item in enumerate(items[:BULLETIN_ITEMS], 1):
+        try:
+            item_id = int(item.get("item_id"))
+        except Exception:
+            item_id = 0
+        article = by_id.get(item_id)
+        category = item.get("category") or (CATEGORY_LABELS.get(article.category, article.category) if article else "Genel")
+        icon = category_icon(category)
+        title = item.get("title") or (article.title if article else "Başlık yok")
+        source = article.source if article else "Kaynak"
+        link = article.link if article else ""
+        score = round(article.score, 1) if article else None
+        confidence = safe_html(item.get("confidence", "orta"), 20)
+
+        lines.append(f"<b>{index}. {icon} {safe_html(title, 115)}</b>")
+        if score is not None:
+            lines.append(f"<b>Kategori:</b> {safe_html(category, 70)}  |  <b>Skor:</b> {score}  |  <b>Güven:</b> {confidence}")
+        else:
+            lines.append(f"<b>Kategori:</b> {safe_html(category, 70)}  |  <b>Güven:</b> {confidence}")
+        lines.append(f"<b>Özet:</b> {safe_html(item.get('summary'), 260)}")
+        lines.append(f"<b>Neden önemli:</b> {safe_html(item.get('why_it_matters'), 220)}")
+        lines.append(f"<b>Teknik not:</b> {safe_html(item.get('technical_note'), 240)}")
+        if link:
+            lines.append(f"<b>Kaynak:</b> <a href=\"{html.escape(link, quote=True)}\">{safe_html(source, 60)}</a>")
+        lines.append("")
+
+    trend = payload.get("trend_comment")
+    if trend:
+        lines.append("<b>🧭 Stratejik trend yorumu</b>")
+        lines.append(safe_html(trend, 520))
+        lines.append("")
+
+    keywords = payload.get("follow_keywords") or []
+    if keywords:
+        compact = ", ".join([clean_text(k) for k in keywords[:8]])
+        lines.append(f"<b>🔎 Takip anahtarları:</b> {safe_html(compact, 220)}")
+
+    return "\n".join(lines).strip()
+
+
+def generate_bulletin(articles: List[Article]) -> str:
+    payload = generate_structured_bulletin(articles)
+    return format_bulletin_html(payload, articles)
 
 
 def send_telegram_message(message: str) -> None:
@@ -559,7 +671,7 @@ def send_telegram_message(message: str) -> None:
         raise RuntimeError("TELEGRAM_BOT_TOKEN veya TELEGRAM_CHAT_ID eksik.")
 
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    chunks = split_message(message, 3900)
+    chunks = split_message(message, 3600)
 
     for chunk in chunks:
         response = requests.post(
@@ -567,7 +679,8 @@ def send_telegram_message(message: str) -> None:
             json={
                 "chat_id": TELEGRAM_CHAT_ID,
                 "text": chunk,
-                "disable_web_page_preview": False,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True,
             },
             timeout=REQUEST_TIMEOUT,
         )
@@ -578,18 +691,32 @@ def send_telegram_message(message: str) -> None:
 def split_message(message: str, max_len: int) -> List[str]:
     if len(message) <= max_len:
         return [message]
-    chunks = []
+
+    blocks = message.split("\n\n")
+    chunks: List[str] = []
     current = ""
-    for paragraph in message.split("\n"):
-        if len(current) + len(paragraph) + 1 <= max_len:
-            current += ("\n" if current else "") + paragraph
+
+    for block in blocks:
+        candidate = block if not current else current + "\n\n" + block
+        if len(candidate) <= max_len:
+            current = candidate
+            continue
+
+        if current:
+            chunks.append(current)
+            current = ""
+
+        if len(block) <= max_len:
+            current = block
         else:
-            if current:
-                chunks.append(current)
-            while len(paragraph) > max_len:
-                chunks.append(paragraph[:max_len])
-                paragraph = paragraph[max_len:]
-            current = paragraph
+            # Çok uzun tek blok varsa HTML linkleri kırmamak için görünür metni sadeleştiriyoruz.
+            plain = re.sub(r"<a href=\"[^\"]+\">([^<]+)</a>", r"\1", block)
+            plain = re.sub(r"</?b>|</?i>", "", plain)
+            while len(plain) > max_len:
+                chunks.append(html.escape(plain[:max_len - 20]) + "…")
+                plain = plain[max_len - 20:]
+            current = html.escape(plain)
+
     if current:
         chunks.append(current)
     return chunks
@@ -597,17 +724,17 @@ def split_message(message: str, max_len: int) -> List[str]:
 
 def fallback_bulletin(articles: List[Article]) -> str:
     now_tr = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=3))).strftime("%d.%m.%Y %H:%M")
-    lines = [f"🤖 AI + Savunma + Robotik Bülteni — {now_tr}", "", "Gemini özetleme çalışmadı; ham aday listesi gönderiliyor.", ""]
+    lines = [f"<b>🤖 AI + Savunma + Robotik Radarı — {now_tr}</b>", "", "Gemini özetleme çalışmadı; skorlanmış aday listesi gönderiliyor.", ""]
     for idx, article in enumerate(articles[:BULLETIN_ITEMS], 1):
+        category = CATEGORY_LABELS.get(article.category, article.category)
         lines.extend([
-            f"{idx}) {article.title}",
-            f"Kategori: {CATEGORY_LABELS.get(article.category, article.category)}",
-            f"Skor: {round(article.score, 1)} | Kaynak: {article.source}",
-            f"Özet: {shorten(article.summary, 260)}",
-            f"Link: {article.link}",
+            f"<b>{idx}. {category_icon(category)} {safe_html(article.title, 120)}</b>",
+            f"<b>Kategori:</b> {safe_html(category, 70)} | <b>Skor:</b> {round(article.score, 1)}",
+            f"<b>Özet:</b> {safe_html(article.summary, 280)}",
+            f"<b>Kaynak:</b> <a href=\"{html.escape(article.link, quote=True)}\">{safe_html(article.source, 60)}</a>",
             "",
         ])
-    return "\n".join(lines)
+    return "\n".join(lines).strip()
 
 
 def main() -> None:

@@ -288,6 +288,25 @@ python main.py
 
 ---
 
+
+## Telegram message format
+
+The bot formats messages with Telegram HTML parse mode. Long source URLs are hidden behind a clickable `Source` label, and each item is rendered as a compact card:
+
+```text
+🤖 Daily AI + Defense + Robotics Radar
+⚡ Quick radar
+
+1. 🛡️ Headline
+Category | Score | Confidence
+Summary
+Why it matters
+Technical note
+Source
+```
+
+For readability, the daily workflow defaults to 6 selected items. You can override this with the `BULLETIN_ITEMS` repository variable.
+
 ## Security notice
 
 This project can be public, but your credentials must remain private.

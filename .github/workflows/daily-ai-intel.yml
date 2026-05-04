@@ -31,5 +31,5 @@ jobs:
           BULLETIN_MODE: daily
           MAX_AGE_HOURS: ${{ vars.MAX_AGE_HOURS || '48' }}
           MAX_CANDIDATES: ${{ vars.MAX_CANDIDATES || '45' }}
-          BULLETIN_ITEMS: ${{ vars.BULLETIN_ITEMS || '8' }}
+          BULLETIN_ITEMS: ${{ vars.BULLETIN_ITEMS || '6' }}
         run: python main.py
