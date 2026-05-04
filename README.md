@@ -76,7 +76,7 @@ Telegram Daily Bulletin
 Bu alana kendi Telegram ekran görüntülerini ekleyebilirsin:
 
 
-<img src="assets/telegram_daily_output.jpg" alt="Telegram Daily Bulletin Example" width="420" />
+<img src="assets/telegram_daily_output_1.jpg" alt="Telegram Daily Bulletin Example" width="420" />
 <img src="assets/telegram_daily_output_2.jpg" alt="Telegram Daily Bulletin Example" width="420" />
 
 
