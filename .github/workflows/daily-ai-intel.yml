@@ -1,0 +1,35 @@
+name: Daily AI Defense Robotics Intel Bulletin
+
+on:
+  schedule:
+    # Türkiye saati 09:00 = UTC 06:00
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  send-daily-bulletin:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Send daily bulletin
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}
+          BULLETIN_MODE: daily
+          MAX_AGE_HOURS: ${{ vars.MAX_AGE_HOURS || '48' }}
+          MAX_CANDIDATES: ${{ vars.MAX_CANDIDATES || '45' }}
+          BULLETIN_ITEMS: ${{ vars.BULLETIN_ITEMS || '8' }}
+        run: python main.py

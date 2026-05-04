@@ -1,0 +1,35 @@
+name: Weekly AI Defense Robotics Trend Report
+
+on:
+  schedule:
+    # Her pazar Türkiye saati 17:00 = UTC 14:00
+    - cron: "0 14 * * 0"
+  workflow_dispatch:
+
+jobs:
+  send-weekly-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Send weekly report
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}
+          BULLETIN_MODE: weekly
+          MAX_AGE_HOURS: "168"
+          MAX_CANDIDATES: "80"
+          BULLETIN_ITEMS: "12"
+        run: python main.py
