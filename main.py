@@ -28,14 +28,18 @@ SOURCES_FILE = os.path.join(ROOT_DIR, "sources.json")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash"
+# 503 / high-demand durumları için model yedekleri. Örnek: gemini-2.5-flash-lite,gemini-2.0-flash
+GEMINI_FALLBACK_MODELS = [m.strip() for m in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-2.5-flash-lite,gemini-2.0-flash").split(",") if m.strip()]
+GEMINI_MAX_RETRIES = int(os.getenv("GEMINI_MAX_RETRIES", "3"))
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "").strip()
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "").strip()  # Opsiyonel; rate-limit için önerilir
+HF_TOKEN = os.getenv("HF_TOKEN", "").strip()  # Opsiyonel; HuggingFace API bazı endpointlerde token isteyebilir
 
 BULLETIN_MODE = os.getenv("BULLETIN_MODE", "daily").strip().lower()
 MAX_AGE_HOURS = int(os.getenv("MAX_AGE_HOURS", "48"))
-MAX_CANDIDATES = int(os.getenv("MAX_CANDIDATES", "60"))
-BULLETIN_ITEMS = int(os.getenv("BULLETIN_ITEMS", "10"))
+MAX_CANDIDATES = int(os.getenv("MAX_CANDIDATES", "35"))
+BULLETIN_ITEMS = int(os.getenv("BULLETIN_ITEMS", "7"))
 REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "20"))
 
 CATEGORY_LABELS = {
@@ -135,14 +139,14 @@ GITHUB_WATCH_REPOS = [
     {"owner": "ultralytics", "repo": "yolov5", "category": "edge_ai", "trust_score": 8},
     {"owner": "hailo-ai", "repo": "hailo-rpi5-examples", "category": "edge_ai", "trust_score": 8},
     {"owner": "NVIDIA", "repo": "TensorRT-LLM", "category": "edge_ai", "trust_score": 9},
-    {"owner": "NVIDIA", "repo": "DeepStream-App", "category": "edge_ai", "trust_score": 7},
+    {"owner": "NVIDIA-AI-IOT", "repo": "deepstream_python_apps", "category": "edge_ai", "trust_score": 7},
     {"owner": "roboflow", "repo": "supervision", "category": "research_cv", "trust_score": 8},
     {"owner": "PaddlePaddle", "repo": "PaddleDetection", "category": "research_cv", "trust_score": 7},
     {"owner": "openai", "repo": "openai-python", "category": "general_ai", "trust_score": 8},
     {"owner": "huggingface", "repo": "transformers", "category": "general_ai", "trust_score": 9},
     {"owner": "huggingface", "repo": "diffusers", "category": "general_ai", "trust_score": 8},
     {"owner": "ggerganov", "repo": "llama.cpp", "category": "edge_ai", "trust_score": 9},
-    {"owner": "OpenRoboticsOrg", "repo": "open_rmf", "category": "robotics", "trust_score": 7},
+    {"owner": "open-rmf", "repo": "rmf", "category": "robotics", "trust_score": 7},
     {"owner": "google-deepmind", "repo": "mujoco", "category": "research_robotics", "trust_score": 8},
     {"owner": "microsoft", "repo": "autogen", "category": "general_ai", "trust_score": 8},
     {"owner": "voxel51", "repo": "fiftyone", "category": "research_cv", "trust_score": 7},
@@ -158,13 +162,11 @@ HF_RELEVANT_TAGS = {
 }
 
 # Papers With Code: takip edilecek task'lar
+ENABLE_PWC = os.getenv("ENABLE_PWC", "false").strip().lower() in {"1", "true", "yes", "on"}
+
 PWC_TASKS = [
     "object-detection",
-    "real-time-object-detection",
     "multi-object-tracking",
-    "semantic-segmentation",
-    "autonomous-driving",
-    "drone-detection",
     "small-object-detection",
 ]
 
@@ -212,6 +214,20 @@ def clean_text(text: Any) -> str:
     text = html.unescape(text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
+
+
+def clean_text_preserve_lines(text: Any) -> str:
+    """Gemini/Telegram çıktısında satır sonlarını koruyarak hafif temizlik yapar."""
+    if text is None:
+        return ""
+    text = str(text).replace("\r\n", "\n").replace("\r", "\n")
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = html.unescape(text)
+    # Her satırın içindeki fazla boşlukları düzelt, ama paragraf yapısını bozma.
+    lines = [re.sub(r"[ \t]+", " ", line).strip() for line in text.split("\n")]
+    cleaned = "\n".join(lines)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
+    return cleaned
 
 
 def shorten(text: str, limit: int) -> str:
@@ -265,7 +281,12 @@ def fetch_json(url: str, headers: Optional[Dict] = None) -> Any:
         _headers.update(headers)
     response = requests.get(url, headers=_headers, timeout=REQUEST_TIMEOUT)
     response.raise_for_status()
-    return response.json()
+    content_type = response.headers.get("content-type", "")
+    try:
+        return response.json()
+    except ValueError as exc:
+        preview = response.text[:160].replace("\n", " ")
+        raise ValueError(f"JSON parse failed. content-type={content_type}, preview={preview}") from exc
 
 
 def fetch_feed(url: str) -> feedparser.FeedParserDict:
@@ -340,8 +361,12 @@ def google_news_url(query: str, language: str, region: str, max_age_hours: int) 
 
 def fetch_google_news(queries: List[Dict[str, Any]]) -> List[Article]:
     articles: List[Article] = []
-    for item in queries:
+    max_queries = int(os.getenv("GOOGLE_NEWS_MAX_QUERIES", str(len(queries))))
+    delay = float(os.getenv("GOOGLE_NEWS_DELAY_SECONDS", "0.4"))
+
+    for item in queries[:max_queries]:
         try:
+            time.sleep(delay)
             url = google_news_url(
                 item["query"], item.get("language", "en"),
                 item.get("region", "US"), MAX_AGE_HOURS,
@@ -371,35 +396,47 @@ def fetch_google_news(queries: List[Dict[str, Any]]) -> List[Article]:
 
 def fetch_arxiv(queries: List[Dict[str, Any]]) -> List[Article]:
     articles: List[Article] = []
-    for item in queries:
-        try:
-            search_query = urllib.parse.quote(item["query"])
-            url = (
-                "https://export.arxiv.org/api/query?"
-                f"search_query={search_query}&start=0&max_results=10"
-                "&sortBy=submittedDate&sortOrder=descending"
-            )
-            parsed = fetch_feed(url)
-            for entry in parsed.entries[:10]:
-                dt = entry_datetime(entry)
-                if not is_recent(dt, MAX_AGE_HOURS):
-                    continue
-                title = clean_text(entry.get("title", ""))
-                link = clean_text(entry.get("link", ""))
-                summary = clean_text(entry.get("summary", ""))
-                if not title or not link:
-                    continue
-                articles.append(Article(
-                    title=title, link=link, summary=summary,
-                    source="arXiv", category=item.get("category", "research"),
-                    published_at=iso_or_empty(dt), kind="arxiv",
-                    trust_score=int(item.get("trust_score", 8)),
-                ))
-            time.sleep(1.0)
-        except Exception as exc:
-            print(f"[WARN] arXiv fetch failed: {item.get('query')} - {exc}", file=sys.stderr)
-    return articles
+    # arXiv API 429 vermemesi için her run'da query sayısını sınırlıyoruz.
+    max_queries = int(os.getenv("ARXIV_MAX_QUERIES", "4"))
+    delay = float(os.getenv("ARXIV_DELAY_SECONDS", "3.5"))
 
+    for item in queries[:max_queries]:
+        search_query_raw = item["query"]
+        for attempt in range(2):
+            try:
+                time.sleep(delay)
+                search_query = urllib.parse.quote(search_query_raw)
+                url = (
+                    "https://export.arxiv.org/api/query?"
+                    f"search_query={search_query}&start=0&max_results=5"
+                    "&sortBy=submittedDate&sortOrder=descending"
+                )
+                parsed = fetch_feed(url)
+                for entry in parsed.entries[:5]:
+                    dt = entry_datetime(entry)
+                    if not is_recent(dt, MAX_AGE_HOURS * 3):
+                        continue
+                    title = clean_text(entry.get("title", ""))
+                    link = clean_text(entry.get("link", ""))
+                    summary = clean_text(entry.get("summary", ""))
+                    if not title or not link:
+                        continue
+                    articles.append(Article(
+                        title=title, link=link, summary=summary,
+                        source="arXiv", category=item.get("category", "research"),
+                        published_at=iso_or_empty(dt), kind="arxiv",
+                        trust_score=int(item.get("trust_score", 8)),
+                    ))
+                break
+            except Exception as exc:
+                msg = str(exc)
+                if "429" in msg and attempt == 0:
+                    print(f"[WARN] arXiv rate-limited, retrying slowly: {search_query_raw}", file=sys.stderr)
+                    time.sleep(delay * 3)
+                    continue
+                print(f"[WARN] arXiv fetch failed: {search_query_raw} - {exc}", file=sys.stderr)
+                break
+    return articles
 
 # ---------------------------------------------------------------------------
 # NEW: HuggingFace
@@ -412,8 +449,10 @@ def fetch_hf_trending_models() -> List[Article]:
     """
     articles: List[Article] = []
     try:
+        headers = {"Authorization": f"Bearer {HF_TOKEN}"} if HF_TOKEN else None
         data = fetch_json(
             "https://huggingface.co/api/trending-repos?limit=30&type=model",
+            headers=headers,
         )
         repos = data if isinstance(data, list) else data.get("recentlyTrending", [])
         now = datetime.now(timezone.utc)
@@ -655,6 +694,12 @@ def fetch_github_releases() -> List[Article]:
                     extra={"tag": tag, "repo": f"{owner}/{repo}"},
                 ))
             time.sleep(0.3)
+        except requests.exceptions.HTTPError as exc:
+            status = getattr(exc.response, "status_code", None)
+            if status == 404:
+                print(f"[INFO] GitHub releases skipped: {owner}/{repo} has no releases or repo moved.", file=sys.stderr)
+            else:
+                print(f"[WARN] GitHub release fetch failed: {owner}/{repo} - {exc}", file=sys.stderr)
         except Exception as exc:
             print(f"[WARN] GitHub release fetch failed: {owner}/{repo} - {exc}", file=sys.stderr)
 
@@ -736,13 +781,16 @@ def fetch_semantic_scholar(queries: List[Dict[str, Any]]) -> List[Article]:
     articles: List[Article] = []
     base_url = "https://api.semanticscholar.org/graph/v1/paper/search"
     fields = "title,abstract,year,authors,citationCount,influentialCitationCount,externalIds,publicationDate,openAccessPdf"
+    max_queries = int(os.getenv("SEMANTIC_SCHOLAR_MAX_QUERIES", "2"))
+    delay = float(os.getenv("SEMANTIC_SCHOLAR_DELAY_SECONDS", "4.0"))
 
-    for item in queries:
+    for item in queries[:max_queries]:
         try:
+            time.sleep(delay)
             params = {
                 "query": item["query"],
                 "fields": fields,
-                "limit": 8,
+                "limit": 5,
                 "sort": "citationCount",
             }
             if item.get("year_filter"):
@@ -949,8 +997,11 @@ def collect_articles() -> List[Article]:
     print("[INFO] Fetching GitHub trending...", file=sys.stderr)
     articles.extend(fetch_github_trending())
 
-    print("[INFO] Fetching Papers With Code...", file=sys.stderr)
-    articles.extend(fetch_papers_with_code(PWC_TASKS))
+    if ENABLE_PWC:
+        print("[INFO] Fetching Papers With Code...", file=sys.stderr)
+        articles.extend(fetch_papers_with_code(PWC_TASKS))
+    else:
+        print("[INFO] Papers With Code disabled by default. Set ENABLE_PWC=true to enable.", file=sys.stderr)
 
     print("[INFO] Fetching Semantic Scholar...", file=sys.stderr)
     articles.extend(fetch_semantic_scholar(sources.get("semantic_scholar_queries", [])))
@@ -1052,20 +1103,48 @@ Aday haberler ve makaleler JSON:
 """.strip()
 
 
+def is_retryable_gemini_error(exc: Exception) -> bool:
+    msg = str(exc).lower()
+    return any(token in msg for token in ["503", "unavailable", "high demand", "429", "resource_exhausted", "rate limit"])
+
+
+def candidate_gemini_models() -> List[str]:
+    models: List[str] = []
+    for model in [GEMINI_MODEL] + GEMINI_FALLBACK_MODELS:
+        if model and model not in models:
+            models.append(model)
+    return models
+
+
 def generate_bulletin(articles: List[Article]) -> str:
     if not GEMINI_API_KEY:
         raise RuntimeError("GEMINI_API_KEY eksik. GitHub Secrets içine ekleyin.")
+
     client = genai.Client(api_key=GEMINI_API_KEY)
     prompt = build_prompt(articles)
-    response = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=prompt,
-    )
-    text = getattr(response, "text", None)
-    if not text:
-        text = str(response)
-    return clean_text(text).replace("\\n", "\n")
+    last_error: Optional[Exception] = None
 
+    for model in candidate_gemini_models():
+        for attempt in range(1, GEMINI_MAX_RETRIES + 1):
+            try:
+                print(f"[INFO] Gemini generate: model={model}, attempt={attempt}", file=sys.stderr)
+                response = client.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                )
+                text = getattr(response, "text", None) or str(response)
+                text = text.replace("\\n", "\n")
+                return clean_text_preserve_lines(text)
+            except Exception as exc:
+                last_error = exc
+                if not is_retryable_gemini_error(exc) or attempt >= GEMINI_MAX_RETRIES:
+                    print(f"[WARN] Gemini failed: model={model}, attempt={attempt}, error={exc}", file=sys.stderr)
+                    break
+                sleep_seconds = min(45, 8 * attempt)
+                print(f"[WARN] Gemini temporary error. Retrying in {sleep_seconds}s: {exc}", file=sys.stderr)
+                time.sleep(sleep_seconds)
+
+    raise RuntimeError(f"Gemini summary failed after model fallbacks: {last_error}")
 
 def send_telegram_message(message: str) -> None:
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
@@ -1075,7 +1154,7 @@ def send_telegram_message(message: str) -> None:
     for chunk in chunks:
         response = requests.post(
             url,
-            json={"chat_id": TELEGRAM_CHAT_ID, "text": chunk, "disable_web_page_preview": False},
+            json={"chat_id": TELEGRAM_CHAT_ID, "text": chunk, "disable_web_page_preview": True},
             timeout=REQUEST_TIMEOUT,
         )
         response.raise_for_status()

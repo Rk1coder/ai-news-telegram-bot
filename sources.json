@@ -1,336 +1,274 @@
 {
-    "metadata": {
-        "project": "AI Defense & Robotics Intel Telegram Bot",
-        "version": "3.0",
-        "description": "Curated sources and search queries for AI, defense, robotics, UAV, edge AI, arXiv and academic intelligence bulletin.",
-        "last_updated": "2026-05-04",
-        "notes": [
-            "rss_sources, google_news_queries, arxiv_queries and semantic_scholar_queries are consumed directly by main.py.",
-            "HuggingFace, GitHub releases, GitHub trending and Papers With Code tasks are currently configured inside main.py."
-        ]
-    },
-    "rss_sources": [
-        {
-            "name": "OpenAI News",
-            "url": "https://openai.com/news/rss.xml",
-            "category": "general_ai",
-            "trust_score": 9
-        },
-        {
-            "name": "Google DeepMind Blog",
-            "url": "https://deepmind.google/discover/blog/rss.xml",
-            "category": "general_ai",
-            "trust_score": 9
-        },
-        {
-            "name": "Anthropic News",
-            "url": "https://www.anthropic.com/news/rss.xml",
-            "category": "general_ai",
-            "trust_score": 9
-        },
-        {
-            "name": "NVIDIA Blog",
-            "url": "https://blogs.nvidia.com/feed/",
-            "category": "edge_ai",
-            "trust_score": 9
-        },
-        {
-            "name": "NVIDIA Technical Blog",
-            "url": "https://developer.nvidia.com/blog/feed/",
-            "category": "edge_ai",
-            "trust_score": 9
-        },
-        {
-            "name": "Hugging Face Blog",
-            "url": "https://huggingface.co/blog/feed.xml",
-            "category": "general_ai",
-            "trust_score": 8
-        },
-        {
-            "name": "MIT Technology Review AI",
-            "url": "https://www.technologyreview.com/topic/artificial-intelligence/feed",
-            "category": "general_ai",
-            "trust_score": 8
-        },
-        {
-            "name": "VentureBeat AI",
-            "url": "https://venturebeat.com/category/ai/feed/",
-            "category": "general_ai",
-            "trust_score": 7
-        },
-        {
-            "name": "TechCrunch AI",
-            "url": "https://techcrunch.com/category/artificial-intelligence/feed/",
-            "category": "general_ai",
-            "trust_score": 7
-        },
-        {
-            "name": "The Decoder",
-            "url": "https://the-decoder.com/feed/",
-            "category": "general_ai",
-            "trust_score": 7
-        },
-        {
-            "name": "IEEE Spectrum Robotics",
-            "url": "https://spectrum.ieee.org/rss/robotics/fulltext",
-            "category": "robotics",
-            "trust_score": 8
-        },
-        {
-            "name": "Robotics & Automation News",
-            "url": "https://roboticsandautomationnews.com/feed/",
-            "category": "robotics",
-            "trust_score": 7
-        },
-        {
-            "name": "Robohub",
-            "url": "https://robohub.org/feed/",
-            "category": "robotics",
-            "trust_score": 7
-        },
-        {
-            "name": "Roboflow Blog",
-            "url": "https://blog.roboflow.com/rss/",
-            "category": "edge_ai",
-            "trust_score": 8
-        },
-        {
-            "name": "Ultralytics Blog",
-            "url": "https://www.ultralytics.com/blog/rss.xml",
-            "category": "edge_ai",
-            "trust_score": 8
-        },
-        {
-            "name": "DefenseScoop",
-            "url": "https://defensescoop.com/feed/",
-            "category": "defense_ai",
-            "trust_score": 8
-        },
-        {
-            "name": "Breaking Defense",
-            "url": "https://breakingdefense.com/feed/",
-            "category": "defense_ai",
-            "trust_score": 8
-        },
-        {
-            "name": "C4ISRNET",
-            "url": "https://www.c4isrnet.com/arc/outboundfeeds/rss/?outputType=xml",
-            "category": "defense_ai",
-            "trust_score": 8
-        },
-        {
-            "name": "Defense News",
-            "url": "https://www.defensenews.com/arc/outboundfeeds/rss/?outputType=xml",
-            "category": "defense_ai",
-            "trust_score": 8
-        },
-        {
-            "name": "The War Zone",
-            "url": "https://www.twz.com/feed",
-            "category": "defense_ai",
-            "trust_score": 7
-        },
-        {
-            "name": "DARPA News",
-            "url": "https://www.darpa.mil/rss.xml",
-            "category": "defense_ai",
-            "trust_score": 9
-        },
-        {
-            "name": "SavunmaSanayiST",
-            "url": "https://www.savunmasanayist.com/feed/",
-            "category": "turkey_defense",
-            "trust_score": 8
-        },
-        {
-            "name": "DefenceTurk",
-            "url": "https://www.defenceturk.net/feed",
-            "category": "turkey_defense",
-            "trust_score": 8
-        }
-    ],
-    "google_news_queries": [
-        {
-            "query": "OpenAI OR Anthropic OR Google DeepMind OR Gemini AI OR AI agents OR multimodal AI",
-            "language": "en",
-            "region": "US",
-            "category": "general_ai",
-            "trust_score": 6
-        },
-        {
-            "query": "military AI OR defense AI OR defence AI OR DARPA autonomous systems OR Pentagon AI",
-            "language": "en",
-            "region": "US",
-            "category": "defense_ai",
-            "trust_score": 7
-        },
-        {
-            "query": "counter-UAS OR counter drone OR anti-drone OR drone defense OR C-UAS OR drone detection AI",
-            "language": "en",
-            "region": "US",
-            "category": "counter_uas",
-            "trust_score": 8
-        },
-        {
-            "query": "autonomous drone OR UAV autonomy OR AI drone OR drone swarm OR swarm drones OR loitering munition AI",
-            "language": "en",
-            "region": "US",
-            "category": "uav_ai",
-            "trust_score": 8
-        },
-        {
-            "query": "humanoid robot OR embodied AI OR robot foundation model OR robot manipulation OR quadruped robot",
-            "language": "en",
-            "region": "US",
-            "category": "robotics",
-            "trust_score": 7
-        },
-        {
-            "query": "edge AI OR on-device AI OR NVIDIA Jetson OR Hailo AI OR TensorRT OR real-time computer vision",
-            "language": "en",
-            "region": "US",
-            "category": "edge_ai",
-            "trust_score": 7
-        },
-        {
-            "query": "YOLO object detection OR real-time object tracking OR small object detection OR computer vision UAV",
-            "language": "en",
-            "region": "US",
-            "category": "edge_ai",
-            "trust_score": 7
-        },
-        {
-            "query": "Baykar OR KIZILELMA OR AKINCI OR TB3 OR ANKA OR TUSA\u015e OR TUSAS OR ASELSAN OR HAVELSAN OR STM OR ROKETSAN",
-            "language": "tr",
-            "region": "TR",
-            "category": "turkey_defense",
-            "trust_score": 8
-        },
-        {
-            "query": "savunma sanayi yapay zeka OR \u0130HA otonom sistem OR S\u0130HA yapay zeka OR s\u00fcr\u00fc \u0130HA OR kamikaze \u0130HA",
-            "language": "tr",
-            "region": "TR",
-            "category": "turkey_defense",
-            "trust_score": 8
-        },
-        {
-            "query": "medical AI OR multimodal medical AI OR oncology AI OR radiology foundation model OR clinical AI agent",
-            "language": "en",
-            "region": "US",
-            "category": "general_ai",
-            "trust_score": 6
-        }
-    ],
-    "arxiv_queries": [
-        {
-            "query": "cat:cs.CV AND all:object detection AND all:real-time",
-            "category": "research_cv",
-            "trust_score": 9
-        },
-        {
-            "query": "cat:cs.CV AND all:small object detection AND all:drone",
-            "category": "research_cv",
-            "trust_score": 9
-        },
-        {
-            "query": "cat:cs.CV AND all:multi-object tracking",
-            "category": "research_cv",
-            "trust_score": 9
-        },
-        {
-            "query": "cat:cs.RO AND all:UAV AND all:autonomous navigation",
-            "category": "research_uav",
-            "trust_score": 9
-        },
-        {
-            "query": "cat:cs.RO AND all:swarm robotics",
-            "category": "research_swarm",
-            "trust_score": 9
-        },
-        {
-            "query": "cat:cs.RO AND all:multi-agent AND all:robotics",
-            "category": "research_swarm",
-            "trust_score": 9
-        },
-        {
-            "query": "cat:cs.RO AND all:humanoid robot",
-            "category": "research_robotics",
-            "trust_score": 9
-        },
-        {
-            "query": "cat:cs.RO AND all:robot manipulation AND all:vision-language",
-            "category": "research_robotics",
-            "trust_score": 9
-        },
-        {
-            "query": "cat:cs.AI AND all:embodied AI",
-            "category": "research_robotics",
-            "trust_score": 9
-        },
-        {
-            "query": "cat:cs.LG AND all:edge AI AND all:inference",
-            "category": "research_edge_ai",
-            "trust_score": 9
-        },
-        {
-            "query": "cat:cs.CV AND all:visual servoing AND all:UAV",
-            "category": "research_uav",
-            "trust_score": 9
-        },
-        {
-            "query": "cat:cs.AI AND all:multi-agent reinforcement learning",
-            "category": "research_swarm",
-            "trust_score": 9
-        }
-    ],
-    "semantic_scholar_queries": [
-        {
-            "query": "UAV autonomous navigation computer vision",
-            "category": "semantic_scholar",
-            "trust_score": 8,
-            "year_filter": "2024-2026"
-        },
-        {
-            "query": "counter UAS drone detection deep learning sensor fusion",
-            "category": "semantic_scholar",
-            "trust_score": 8,
-            "year_filter": "2024-2026"
-        },
-        {
-            "query": "swarm robotics multi-agent reinforcement learning UAV",
-            "category": "semantic_scholar",
-            "trust_score": 8,
-            "year_filter": "2024-2026"
-        },
-        {
-            "query": "edge AI real-time object detection embedded vision",
-            "category": "semantic_scholar",
-            "trust_score": 8,
-            "year_filter": "2024-2026"
-        },
-        {
-            "query": "humanoid robot embodied AI vision language action model",
-            "category": "semantic_scholar",
-            "trust_score": 8,
-            "year_filter": "2024-2026"
-        },
-        {
-            "query": "small object detection UAV aerial imagery YOLO",
-            "category": "semantic_scholar",
-            "trust_score": 8,
-            "year_filter": "2024-2026"
-        },
-        {
-            "query": "multimodal medical AI oncology clinical decision support",
-            "category": "semantic_scholar",
-            "trust_score": 7,
-            "year_filter": "2024-2026"
-        },
-        {
-            "query": "trustworthy AI autonomous systems defense",
-            "category": "semantic_scholar",
-            "trust_score": 7,
-            "year_filter": "2024-2026"
-        }
+  "metadata": {
+    "project": "AI Defense & Robotics Intel Telegram Bot",
+    "version": "3.1-stable",
+    "description": "Curated sources and search queries for AI, defense, robotics, UAV, edge AI, arXiv and academic intelligence bulletin.",
+    "last_updated": "2026-05-04",
+    "notes": [
+      "Broken/blocked RSS feeds removed; DeepMind, Anthropic and SavunmaSanayiST are tracked via Google News queries.",
+      "arXiv and Semantic Scholar query counts are intentionally reduced to avoid 429 rate limits in GitHub Actions.",
+      "Papers With Code is disabled by default in main.py; set ENABLE_PWC=true to enable if the endpoint works for you."
     ]
+  },
+  "rss_sources": [
+    {
+      "name": "OpenAI News",
+      "url": "https://openai.com/news/rss.xml",
+      "category": "general_ai",
+      "trust_score": 9
+    },
+    {
+      "name": "NVIDIA Blog",
+      "url": "https://blogs.nvidia.com/feed/",
+      "category": "edge_ai",
+      "trust_score": 9
+    },
+    {
+      "name": "NVIDIA Technical Blog",
+      "url": "https://developer.nvidia.com/blog/feed/",
+      "category": "edge_ai",
+      "trust_score": 9
+    },
+    {
+      "name": "Hugging Face Blog",
+      "url": "https://huggingface.co/blog/feed.xml",
+      "category": "general_ai",
+      "trust_score": 8
+    },
+    {
+      "name": "MIT Technology Review AI",
+      "url": "https://www.technologyreview.com/topic/artificial-intelligence/feed",
+      "category": "general_ai",
+      "trust_score": 8
+    },
+    {
+      "name": "VentureBeat AI",
+      "url": "https://venturebeat.com/category/ai/feed/",
+      "category": "general_ai",
+      "trust_score": 7
+    },
+    {
+      "name": "TechCrunch AI",
+      "url": "https://techcrunch.com/category/artificial-intelligence/feed/",
+      "category": "general_ai",
+      "trust_score": 7
+    },
+    {
+      "name": "The Decoder",
+      "url": "https://the-decoder.com/feed/",
+      "category": "general_ai",
+      "trust_score": 7
+    },
+    {
+      "name": "IEEE Spectrum Robotics",
+      "url": "https://spectrum.ieee.org/rss/robotics/fulltext",
+      "category": "robotics",
+      "trust_score": 8
+    },
+    {
+      "name": "Robotics & Automation News",
+      "url": "https://roboticsandautomationnews.com/feed/",
+      "category": "robotics",
+      "trust_score": 7
+    },
+    {
+      "name": "Robohub",
+      "url": "https://robohub.org/feed/",
+      "category": "robotics",
+      "trust_score": 7
+    },
+    {
+      "name": "Roboflow Blog",
+      "url": "https://blog.roboflow.com/rss/",
+      "category": "edge_ai",
+      "trust_score": 8
+    },
+    {
+      "name": "Ultralytics Blog",
+      "url": "https://www.ultralytics.com/blog/rss.xml",
+      "category": "edge_ai",
+      "trust_score": 8
+    },
+    {
+      "name": "DefenseScoop",
+      "url": "https://defensescoop.com/feed/",
+      "category": "defense_ai",
+      "trust_score": 8
+    },
+    {
+      "name": "Breaking Defense",
+      "url": "https://breakingdefense.com/feed/",
+      "category": "defense_ai",
+      "trust_score": 8
+    },
+    {
+      "name": "C4ISRNET",
+      "url": "https://www.c4isrnet.com/arc/outboundfeeds/rss/?outputType=xml",
+      "category": "defense_ai",
+      "trust_score": 8
+    },
+    {
+      "name": "Defense News",
+      "url": "https://www.defensenews.com/arc/outboundfeeds/rss/?outputType=xml",
+      "category": "defense_ai",
+      "trust_score": 8
+    },
+    {
+      "name": "The War Zone",
+      "url": "https://www.twz.com/feed",
+      "category": "defense_ai",
+      "trust_score": 7
+    },
+    {
+      "name": "DARPA News",
+      "url": "https://www.darpa.mil/rss.xml",
+      "category": "defense_ai",
+      "trust_score": 9
+    },
+    {
+      "name": "DefenceTurk",
+      "url": "https://www.defenceturk.net/feed",
+      "category": "turkey_defense",
+      "trust_score": 8
+    }
+  ],
+  "google_news_queries": [
+    {
+      "query": "site:deepmind.google AI OR robotics OR Gemini OR research",
+      "language": "en",
+      "region": "US",
+      "category": "general_ai",
+      "trust_score": 8
+    },
+    {
+      "query": "site:anthropic.com/news Claude OR Anthropic OR AI safety OR defense",
+      "language": "en",
+      "region": "US",
+      "category": "general_ai",
+      "trust_score": 8
+    },
+    {
+      "query": "site:savunmasanayist.com yapay zeka OR İHA OR SİHA OR otonom sistemler OR savunma sanayi",
+      "language": "tr",
+      "region": "TR",
+      "category": "turkey_defense",
+      "trust_score": 8
+    },
+    {
+      "query": "OpenAI OR Anthropic OR Google DeepMind OR Gemini AI OR AI agents OR multimodal AI",
+      "language": "en",
+      "region": "US",
+      "category": "general_ai",
+      "trust_score": 6
+    },
+    {
+      "query": "military AI OR defense AI OR defence AI OR DARPA autonomous systems OR Pentagon AI",
+      "language": "en",
+      "region": "US",
+      "category": "defense_ai",
+      "trust_score": 7
+    },
+    {
+      "query": "counter-UAS OR counter drone OR anti-drone OR drone defense OR C-UAS OR drone detection AI",
+      "language": "en",
+      "region": "US",
+      "category": "counter_uas",
+      "trust_score": 8
+    },
+    {
+      "query": "autonomous drone OR UAV autonomy OR AI drone OR drone swarm OR swarm drones OR loitering munition AI",
+      "language": "en",
+      "region": "US",
+      "category": "uav_ai",
+      "trust_score": 8
+    },
+    {
+      "query": "humanoid robot OR embodied AI OR robot foundation model OR robot manipulation OR quadruped robot",
+      "language": "en",
+      "region": "US",
+      "category": "robotics",
+      "trust_score": 7
+    },
+    {
+      "query": "edge AI OR on-device AI OR NVIDIA Jetson OR Hailo AI OR TensorRT OR real-time computer vision",
+      "language": "en",
+      "region": "US",
+      "category": "edge_ai",
+      "trust_score": 7
+    },
+    {
+      "query": "YOLO object detection OR real-time object tracking OR small object detection OR computer vision UAV",
+      "language": "en",
+      "region": "US",
+      "category": "edge_ai",
+      "trust_score": 7
+    },
+    {
+      "query": "Baykar OR KIZILELMA OR AKINCI OR TB3 OR ANKA OR TUSAŞ OR TUSAS OR ASELSAN OR HAVELSAN OR STM OR ROKETSAN",
+      "language": "tr",
+      "region": "TR",
+      "category": "turkey_defense",
+      "trust_score": 8
+    },
+    {
+      "query": "savunma sanayi yapay zeka OR İHA otonom sistem OR SİHA yapay zeka OR sürü İHA OR kamikaze İHA",
+      "language": "tr",
+      "region": "TR",
+      "category": "turkey_defense",
+      "trust_score": 8
+    }
+  ],
+  "arxiv_queries": [
+    {
+      "query": "cat:cs.CV AND all:UAV AND all:object detection",
+      "category": "research_uav",
+      "trust_score": 9
+    },
+    {
+      "query": "cat:cs.RO AND all:swarm robotics",
+      "category": "research_swarm",
+      "trust_score": 9
+    },
+    {
+      "query": "cat:cs.RO AND all:humanoid robot",
+      "category": "research_robotics",
+      "trust_score": 8
+    },
+    {
+      "query": "cat:cs.CV AND all:multi-object tracking",
+      "category": "research_cv",
+      "trust_score": 8
+    },
+    {
+      "query": "cat:cs.LG AND all:edge AI AND all:inference",
+      "category": "research_edge_ai",
+      "trust_score": 8
+    }
+  ],
+  "semantic_scholar_queries": [
+    {
+      "query": "UAV autonomous navigation computer vision",
+      "category": "research_uav",
+      "trust_score": 8,
+      "year_filter": "2024-2026"
+    },
+    {
+      "query": "counter UAS drone detection deep learning sensor fusion",
+      "category": "counter_uas",
+      "trust_score": 8,
+      "year_filter": "2024-2026"
+    },
+    {
+      "query": "swarm robotics multi-agent reinforcement learning UAV",
+      "category": "research_swarm",
+      "trust_score": 8,
+      "year_filter": "2024-2026"
+    },
+    {
+      "query": "edge AI real-time object detection embedded vision",
+      "category": "research_edge_ai",
+      "trust_score": 8,
+      "year_filter": "2024-2026"
+    }
+  ]
 }

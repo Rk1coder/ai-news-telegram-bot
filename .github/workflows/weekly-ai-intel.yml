@@ -27,9 +27,21 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
           BULLETIN_MODE: weekly
-          MAX_AGE_HOURS: "168"
-          MAX_CANDIDATES: "80"
-          BULLETIN_ITEMS: "12"
+          GEMINI_MODEL: ${{ vars.WEEKLY_GEMINI_MODEL || 'gemini-2.5-pro' }}
+          GEMINI_FALLBACK_MODELS: ${{ vars.GEMINI_FALLBACK_MODELS || 'gemini-2.5-flash,gemini-2.5-flash-lite,gemini-2.0-flash' }}
+          GEMINI_MAX_RETRIES: ${{ vars.GEMINI_MAX_RETRIES || '3' }}
+
+          MAX_AGE_HOURS: ${{ vars.WEEKLY_MAX_AGE_HOURS || '168' }}
+          MAX_CANDIDATES: ${{ vars.WEEKLY_MAX_CANDIDATES || '45' }}
+          BULLETIN_ITEMS: ${{ vars.WEEKLY_BULLETIN_ITEMS || '10' }}
+          REQUEST_TIMEOUT: ${{ vars.REQUEST_TIMEOUT || '25' }}
+          ARXIV_MAX_QUERIES: ${{ vars.ARXIV_MAX_QUERIES || '4' }}
+          ARXIV_DELAY_SECONDS: ${{ vars.ARXIV_DELAY_SECONDS || '3.5' }}
+          SEMANTIC_SCHOLAR_MAX_QUERIES: ${{ vars.SEMANTIC_SCHOLAR_MAX_QUERIES || '2' }}
+          SEMANTIC_SCHOLAR_DELAY_SECONDS: ${{ vars.SEMANTIC_SCHOLAR_DELAY_SECONDS || '4.0' }}
+          ENABLE_PWC: ${{ vars.ENABLE_PWC || 'false' }}
         run: python main.py
