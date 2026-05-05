@@ -1,6 +1,6 @@
 name: Daily AI Defense Robotics Intel Bulletin
 
-on:
+"on":
   schedule:
     # Türkiye saati 09:17 = UTC 06:17
     - cron: "17 6 * * *"
